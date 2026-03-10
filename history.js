@@ -1,6 +1,8 @@
-// history.js - History Management
+// history.js - History Management for Techno Mobile POS
 
-// Display history function
+// ==================== HISTORY FUNCTIONS ====================
+
+// Display history in the history tab
 window.displayHistory = function () {
   console.log('Displaying history...')
 
@@ -21,6 +23,7 @@ window.displayHistory = function () {
     return
   }
 
+  // Display history items
   historyList.innerHTML = history
     .map(
       (inv, index) => `
@@ -46,4 +49,59 @@ window.displayHistory = function () {
   `,
     )
     .join('')
+}
+
+// View invoice from history
+window.viewInvoice = function (index) {
+  console.log('Viewing invoice:', index)
+
+  const history = JSON.parse(
+    localStorage.getItem('techno_invoice_history') || '[]',
+  )
+  const inv = history[index]
+  if (!inv) return
+
+  // Populate PDF with history data
+  document.getElementById('pdfCustomerName').innerText = inv.customerName
+  document.getElementById('pdfCustomerPhone').innerText = inv.phone
+  document.getElementById('pdfInvoiceDisplay').innerText = inv.invoiceNo
+  document.getElementById('pdfDateDisplay').innerText = inv.date
+  document.getElementById('pdfItemsBody').innerHTML = inv.itemsHTML
+  document.getElementById('pdfSubTotal').innerText =
+    `Rs. ${inv.subtotal.toLocaleString()}`
+  document.getElementById('pdfDiscount').innerText =
+    `-Rs. ${inv.discount.toLocaleString()}`
+  document.getElementById('pdfGrandTotal').innerText =
+    `Rs. ${inv.total.toLocaleString()}`
+
+  // Generate PDF
+  if (typeof generatePDFWithSettings === 'function') {
+    generatePDFWithSettings(inv.invoiceNo)
+  } else {
+    console.error('generatePDFWithSettings function not found')
+  }
+}
+
+// Delete from history
+window.deleteFromHistory = function (index) {
+  console.log('Deleting invoice:', index)
+
+  if (confirm('Are you sure you want to delete this invoice?')) {
+    const history = JSON.parse(
+      localStorage.getItem('techno_invoice_history') || '[]',
+    )
+    history.splice(index, 1)
+    localStorage.setItem('techno_invoice_history', JSON.stringify(history))
+    displayHistory()
+  }
+}
+
+// Clear all history
+window.clearHistory = function () {
+  console.log('Clearing all history')
+
+  if (confirm('Are you sure you want to clear all history?')) {
+    localStorage.setItem('techno_invoice_history', JSON.stringify([]))
+    displayHistory()
+  }
 }
