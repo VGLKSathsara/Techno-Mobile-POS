@@ -1,52 +1,15 @@
-// ==================== HISTORY MANAGEMENT ====================
-const STORAGE_KEYS = {
-  INVOICE_HISTORY: 'techno_invoice_history',
-  INVENTORY: 'techno_inventory',
-  USER: 'techno_user',
-}
+// history.js - History Management
 
-// Load invoice history
-function loadHistory() {
-  const saved = localStorage.getItem(STORAGE_KEYS.INVOICE_HISTORY)
-  return saved ? JSON.parse(saved) : []
-}
-
-// Save invoice to histo
-function saveToHistory(invoice) {
-  const history = loadHistory()
-  history.unshift(invoice) // Add to beginning
-  localStorage.setItem(STORAGE_KEYS.INVOICE_HISTORY, JSON.stringify(history))
-  if (typeof displayHistory === 'function') {
-    displayHistory()
-  }
-}
-
-// Delete from history
-function deleteFromHistory(index) {
-  const history = loadHistory()
-  history.splice(index, 1)
-  localStorage.setItem(STORAGE_KEYS.INVOICE_HISTORY, JSON.stringify(history))
-  if (typeof displayHistory === 'function') {
-    displayHistory()
-  }
-}
-
-// Clear all history
-function clearHistory() {
-  if (confirm('Are you sure you want to clear all history?')) {
-    localStorage.setItem(STORAGE_KEYS.INVOICE_HISTORY, JSON.stringify([]))
-    if (typeof displayHistory === 'function') {
-      displayHistory()
-    }
-  }
-}
-
-// Display history (will be implemented in main script)
+// Display history function
 window.displayHistory = function () {
-  const history = loadHistory()
-  const historyList = document.getElementById('historyList')
+  console.log('Displaying history...')
 
+  const historyList = document.getElementById('historyList')
   if (!historyList) return
+
+  // Load history from localStorage
+  const saved = localStorage.getItem('techno_invoice_history')
+  const history = saved ? JSON.parse(saved) : []
 
   if (history.length === 0) {
     historyList.innerHTML = `
@@ -63,14 +26,14 @@ window.displayHistory = function () {
       (inv, index) => `
     <div class="history-item">
       <div class="history-info">
-        <h4>${inv.customerName}</h4>
+        <h4>${inv.customerName || 'Customer'}</h4>
         <div class="history-meta">
-          <span><i class="fas fa-file-invoice"></i> ${inv.invoiceNo}</span>
-          <span><i class="fas fa-calendar"></i> ${inv.date}</span>
-          <span><i class="fas fa-phone"></i> ${inv.phone}</span>
+          <span><i class="fas fa-file-invoice"></i> ${inv.invoiceNo || 'N/A'}</span>
+          <span><i class="fas fa-calendar"></i> ${inv.date || 'N/A'}</span>
+          <span><i class="fas fa-phone"></i> ${inv.phone || 'N/A'}</span>
         </div>
       </div>
-      <div class="history-amount">Rs. ${inv.total.toLocaleString()}</div>
+      <div class="history-amount">Rs. ${(inv.total || 0).toLocaleString()}</div>
       <div class="history-actions">
         <button class="history-btn view" onclick="viewInvoice(${index})">
           <i class="fas fa-eye"></i> View
