@@ -161,7 +161,12 @@
                 type="number"
                 id="inDiscount"
                 value="0"
-                oninput="recalc()"
+                min="0"
+                step="100"
+                oninput="
+                  validateDiscount(this)
+                  recalc()
+                "
               />
             </div>
           </div>
@@ -252,10 +257,10 @@
               <table class="pdf-table">
                 <thead>
                   <tr>
-                    <th style="width: 50%">Item Description</th>
-                    <th style="width: 10%; text-align: center">Qty</th>
-                    <th style="width: 15%; text-align: right">Price (Rs.)</th>
-                    <th style="width: 15%; text-align: right">Total (Rs.)</th>
+                    <th>Item Description</th>
+                    <th>Qty</th>
+                    <th>Price (Rs.)</th>
+                    <th>Total (Rs.)</th>
                   </tr>
                 </thead>
                 <tbody id="pdfItemsBody"></tbody>
