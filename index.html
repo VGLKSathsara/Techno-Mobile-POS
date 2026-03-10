@@ -31,6 +31,7 @@
           type="text"
           id="username"
           placeholder="Enter username"
+          value="DilkaRishan"
           autocomplete="off"
         />
       </div>
@@ -41,6 +42,7 @@
           type="password"
           id="password"
           placeholder="Enter password"
+          value="Dilka789"
           autocomplete="off"
         />
       </div>
@@ -102,7 +104,7 @@
               <p>Create new invoice</p>
             </div>
             <div class="pos-invoice-meta">
-              <input type="text" id="inNo" value="INV-2026-001" readonly />
+              <input type="text" id="inNo" readonly />
               <p id="liveDate"></p>
             </div>
           </div>
@@ -191,9 +193,7 @@
               <i class="fas fa-trash"></i> Clear All
             </button>
           </div>
-          <div class="history-list" id="historyList">
-            <!-- History items will be loaded here -->
-          </div>
+          <div class="history-list" id="historyList"></div>
         </div>
       </div>
     </div>
@@ -238,9 +238,7 @@
                   </div>
                   <div>
                     <div class="pdf-info-label">Date</div>
-                    <div class="pdf-info-value" id="pdfDateDisplay">
-                      03/10/2026
-                    </div>
+                    <div class="pdf-info-value" id="pdfDateDisplay"></div>
                   </div>
                 </div>
               </div>
@@ -316,7 +314,6 @@
 
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="history.js"></script>
     <script src="script.js"></script>
   </body>
 </html>
