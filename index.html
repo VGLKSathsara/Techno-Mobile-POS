@@ -225,7 +225,7 @@
             <!-- Client Info -->
             <div class="pdf-info-grid">
               <div class="pdf-info-block">
-                <div class="pdf-info-label">Invoice To</div>
+                <div class="pdf-info-label">INVOICE TO</div>
                 <div class="pdf-info-value" id="pdfCustomerName">
                   Walk-in Customer
                 </div>
@@ -236,13 +236,13 @@
               <div class="pdf-info-block">
                 <div style="display: flex; justify-content: space-between">
                   <div>
-                    <div class="pdf-info-label">Invoice #</div>
+                    <div class="pdf-info-label">INVOICE #</div>
                     <div class="pdf-info-value" id="pdfInvoiceDisplay">
                       INV-001
                     </div>
                   </div>
                   <div>
-                    <div class="pdf-info-label">Date</div>
+                    <div class="pdf-info-label">DATE</div>
                     <div class="pdf-info-value" id="pdfDateDisplay"></div>
                   </div>
                 </div>
@@ -257,13 +257,17 @@
               <table class="pdf-table">
                 <thead>
                   <tr>
-                    <th>Item Description</th>
-                    <th>Qty</th>
-                    <th>Price (Rs.)</th>
-                    <th>Total (Rs.)</th>
+                    <th style="width: 45%; text-align: left">
+                      ITEM DESCRIPTION
+                    </th>
+                    <th style="width: 10%; text-align: center">QTY</th>
+                    <th style="width: 20%; text-align: right">PRICE (RS.)</th>
+                    <th style="width: 25%; text-align: right">TOTAL (RS.)</th>
                   </tr>
                 </thead>
-                <tbody id="pdfItemsBody"></tbody>
+                <tbody id="pdfItemsBody">
+                  <!-- Items will be inserted here -->
+                </tbody>
               </table>
             </div>
 
