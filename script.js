@@ -31,66 +31,90 @@ function saveInventory(inventory) {
   localStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(inventory))
 }
 
-// ==================== LOGIN FUNCTIONS ====================
-function login() {
+// ==================== FIXED LOGIN FUNCTION ====================
+window.login = function () {
+  console.log('Login function called')
+
+  // Get values from input fields
   const username = document.getElementById('username').value
   const password = document.getElementById('password').value
 
-  // Updated credentials: DilkaRishan / Dilka789
+  console.log('Username entered:', username)
+  console.log('Password entered:', password)
+
+  // Check credentials
   if (username === 'DilkaRishan' && password === 'Dilka789') {
-    localStorage.setItem(
-      STORAGE_KEYS.USER,
-      JSON.stringify({ username: 'DilkaRishan', loggedIn: true }),
-    )
+    console.log('Login successful')
+
+    // Hide login page, show POS system
     document.getElementById('loginPage').style.display = 'none'
     document.getElementById('posSystem').style.display = 'block'
-    document.getElementById('loggedUser').innerText = 'DilkaRishan'
+
+    // Set logged user name
+    const loggedUserSpan = document.getElementById('loggedUser')
+    if (loggedUserSpan) {
+      loggedUserSpan.innerText = 'DilkaRishan'
+    }
+
+    // Initialize POS
     initializePOS()
   } else {
+    console.log('Login failed')
     alert('Invalid credentials! Use DilkaRishan / Dilka789')
   }
 }
 
-function logout() {
-  localStorage.removeItem(STORAGE_KEYS.USER)
+// ==================== LOGOUT FUNCTION ====================
+window.logout = function () {
+  console.log('Logout function called')
   document.getElementById('loginPage').style.display = 'block'
   document.getElementById('posSystem').style.display = 'none'
 }
 
-// Check if user is logged in
-function checkLogin() {
-  const user = localStorage.getItem(STORAGE_KEYS.USER)
-  if (user) {
-    document.getElementById('loginPage').style.display = 'none'
-    document.getElementById('posSystem').style.display = 'block'
-    initializePOS()
+// ==================== CHECK LOGIN ON LOAD ====================
+window.onload = function () {
+  console.log('Page loaded')
+
+  // Always show login page first
+  document.getElementById('loginPage').style.display = 'block'
+  document.getElementById('posSystem').style.display = 'none'
+
+  // Set default date for testing
+  const dateInput = document.getElementById('inDate')
+  if (dateInput) {
+    dateInput.valueAsDate = new Date()
+  }
+
+  // Update live date
+  const liveDate = document.getElementById('liveDate')
+  if (liveDate) {
+    liveDate.innerText = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
   }
 }
 
 // ==================== POS FUNCTIONS ====================
 function initializePOS() {
+  console.log('Initializing POS...')
+
   // Load inventory from localStorage
   const savedInventory = loadInventory()
 
   // Clear existing accessories first
   const accGrid = document.getElementById('accGrid')
-  accGrid.innerHTML = ''
-
-  savedInventory.forEach((item) => addAcc(item.n, item.p))
-
-  // Set date
-  document.getElementById('inDate').valueAsDate = new Date()
-  document.getElementById('liveDate').innerText = new Date().toLocaleDateString(
-    'en-US',
-    {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    },
-  )
+  if (accGrid) {
+    accGrid.innerHTML = ''
+    savedInventory.forEach((item) => addAcc(item.n, item.p))
+  }
 
   // Generate invoice number
-  document.getElementById('inNo').value = generateInvoiceNumber()
+  const invoiceInput = document.getElementById('inNo')
+  if (invoiceInput) {
+    invoiceInput.value = generateInvoiceNumber()
+  }
 
   // Display history
   if (typeof window.displayHistory === 'function') {
@@ -109,7 +133,10 @@ function generateInvoiceNumber() {
 }
 
 // Add accessory
-function addAcc(n = 'New Accessory', p = 0) {
+window.addAcc = function (n = 'New Accessory', p = 0) {
+  const accGrid = document.getElementById('accGrid')
+  if (!accGrid) return
+
   const div = document.createElement('div')
   div.className = 'pos-acc-card'
   div.innerHTML = `
@@ -122,7 +149,7 @@ function addAcc(n = 'New Accessory', p = 0) {
       </div>
     </div>
   `
-  document.getElementById('accGrid').appendChild(div)
+  accGrid.appendChild(div)
 
   // Save to localStorage
   saveInventoryToStorage()
@@ -132,15 +159,18 @@ function addAcc(n = 'New Accessory', p = 0) {
 function saveInventoryToStorage() {
   const inventory = []
   document.querySelectorAll('.pos-acc-card').forEach((card) => {
-    const name = card.querySelector('.pos-acc-name').value
-    const price = Number(card.querySelector('.pos-price').value)
+    const name = card.querySelector('.pos-acc-name')?.value || 'New Accessory'
+    const price = Number(card.querySelector('.pos-price')?.value) || 0
     inventory.push({ n: name, p: price })
   })
   saveInventory(inventory)
 }
 
 // Add device
-function addDevice() {
+window.addDevice = function () {
+  const deviceArea = document.getElementById('deviceArea')
+  if (!deviceArea) return
+
   const div = document.createElement('div')
   div.className = 'pos-device-row'
   div.innerHTML = `
@@ -151,47 +181,60 @@ function addDevice() {
     <input type="number" class="d-price" placeholder="Price" oninput="recalc()">
     <button onclick="this.parentElement.remove(); recalc()" style="background:none; border:none; color:#ef4444; font-size:22px; cursor:pointer;">&times;</button>
   `
-  document.getElementById('deviceArea').appendChild(div)
+  deviceArea.appendChild(div)
 }
 
 // Recalculate total
-function recalc() {
+window.recalc = function () {
   let sub = 0
+
+  // Calculate accessories
   document.querySelectorAll('.pos-acc-card').forEach((card) => {
-    if (card.querySelector('.pos-check').checked) {
-      sub +=
-        Number(card.querySelector('.pos-qty').value) *
-        Number(card.querySelector('.pos-price').value)
+    if (card.querySelector('.pos-check')?.checked) {
+      const qty = Number(card.querySelector('.pos-qty')?.value) || 0
+      const price = Number(card.querySelector('.pos-price')?.value) || 0
+      sub += qty * price
     }
   })
+
+  // Calculate devices
   document.querySelectorAll('.d-name').forEach((d, i) => {
     if (d.value) {
-      sub +=
-        Number(document.querySelectorAll('.d-qty')[i].value) *
-        Number(document.querySelectorAll('.d-price')[i].value)
+      const qty = Number(document.querySelectorAll('.d-qty')[i]?.value) || 0
+      const price = Number(document.querySelectorAll('.d-price')[i]?.value) || 0
+      sub += qty * price
     }
   })
-  let disc = Number(document.getElementById('inDiscount').value)
-  document.getElementById('liveTotal').innerText =
-    'Rs. ' + (sub - disc).toLocaleString()
+
+  // Apply discount
+  const discount = Number(document.getElementById('inDiscount')?.value) || 0
+  const total = sub - discount
+
+  // Update display
+  const liveTotal = document.getElementById('liveTotal')
+  if (liveTotal) {
+    liveTotal.innerText = 'Rs. ' + total.toLocaleString()
+  }
 }
 
 // Switch tabs
-function switchTab(tab) {
+window.switchTab = function (tab) {
   const posTab = document.getElementById('posTab')
   const historyTab = document.getElementById('historyTab')
   const navItems = document.querySelectorAll('.nav-item')
 
+  if (!posTab || !historyTab) return
+
   if (tab === 'pos') {
     posTab.style.display = 'block'
     historyTab.classList.remove('active')
-    navItems[0].classList.add('active')
-    navItems[1].classList.remove('active')
+    navItems[0]?.classList.add('active')
+    navItems[1]?.classList.remove('active')
   } else {
     posTab.style.display = 'none'
     historyTab.classList.add('active')
-    navItems[0].classList.remove('active')
-    navItems[1].classList.add('active')
+    navItems[0]?.classList.remove('active')
+    navItems[1]?.classList.add('active')
     if (typeof window.displayHistory === 'function') {
       window.displayHistory()
     }
@@ -199,24 +242,34 @@ function switchTab(tab) {
 }
 
 // View invoice from history
-function viewInvoice(index) {
+window.viewInvoice = function (index) {
   const history = loadHistory()
   const inv = history[index]
+  if (!inv) return
 
   // Populate PDF with history data
-  document.getElementById('pdfCustomerName').innerText = inv.customerName
-  document.getElementById('pdfCustomerPhone').innerText = inv.phone
-  document.getElementById('pdfInvoiceDisplay').innerText = inv.invoiceNo
-  document.getElementById('pdfDateDisplay').innerText = inv.date
-  document.getElementById('pdfItemsBody').innerHTML = inv.itemsHTML
-  document.getElementById('pdfSubTotal').innerText =
-    `Rs. ${inv.subtotal.toLocaleString()}`
-  document.getElementById('pdfDiscount').innerText =
-    `-Rs. ${inv.discount.toLocaleString()}`
-  document.getElementById('pdfGrandTotal').innerText =
-    `Rs. ${inv.total.toLocaleString()}`
+  const pdfCustomerName = document.getElementById('pdfCustomerName')
+  const pdfCustomerPhone = document.getElementById('pdfCustomerPhone')
+  const pdfInvoiceDisplay = document.getElementById('pdfInvoiceDisplay')
+  const pdfDateDisplay = document.getElementById('pdfDateDisplay')
+  const pdfItemsBody = document.getElementById('pdfItemsBody')
+  const pdfSubTotal = document.getElementById('pdfSubTotal')
+  const pdfDiscount = document.getElementById('pdfDiscount')
+  const pdfGrandTotal = document.getElementById('pdfGrandTotal')
 
-  // Generate PDF with fixed settings
+  if (pdfCustomerName) pdfCustomerName.innerText = inv.customerName
+  if (pdfCustomerPhone) pdfCustomerPhone.innerText = inv.phone
+  if (pdfInvoiceDisplay) pdfInvoiceDisplay.innerText = inv.invoiceNo
+  if (pdfDateDisplay) pdfDateDisplay.innerText = inv.date
+  if (pdfItemsBody) pdfItemsBody.innerHTML = inv.itemsHTML
+  if (pdfSubTotal)
+    pdfSubTotal.innerText = `Rs. ${inv.subtotal.toLocaleString()}`
+  if (pdfDiscount)
+    pdfDiscount.innerText = `-Rs. ${inv.discount.toLocaleString()}`
+  if (pdfGrandTotal)
+    pdfGrandTotal.innerText = `Rs. ${inv.total.toLocaleString()}`
+
+  // Generate PDF
   generatePDFWithSettings(inv.invoiceNo)
 }
 
@@ -226,16 +279,18 @@ function loadHistory() {
   return saved ? JSON.parse(saved) : []
 }
 
-// ==================== PDF GENERATION FUNCTION - MAIN ====================
-function generatePremiumPDF() {
+// ==================== PDF GENERATION FUNCTION ====================
+window.generatePremiumPDF = function () {
+  console.log('Generating PDF...')
+
   // Get data from UI
-  const invoiceNo = document.getElementById('inNo').value
+  const invoiceNo = document.getElementById('inNo')?.value || 'INV-001'
   const customerName =
-    document.getElementById('inName').value || 'Walk-in Customer'
+    document.getElementById('inName')?.value || 'Walk-in Customer'
   const customerPhone =
-    document.getElementById('inPhone').value || 'Not Provided'
-  const invoiceDate = document.getElementById('inDate').value
-  const discount = Number(document.getElementById('inDiscount').value)
+    document.getElementById('inPhone')?.value || 'Not Provided'
+  const invoiceDate = document.getElementById('inDate')?.value
+  const discount = Number(document.getElementById('inDiscount')?.value) || 0
 
   const formattedDate = invoiceDate
     ? new Date(invoiceDate)
@@ -254,20 +309,25 @@ function generatePremiumPDF() {
         .replace(/\//g, '/')
 
   // Update PDF elements
-  document.getElementById('pdfCustomerName').innerText = customerName
-  document.getElementById('pdfCustomerPhone').innerText = customerPhone
-  document.getElementById('pdfInvoiceDisplay').innerText = invoiceNo
-  document.getElementById('pdfDateDisplay').innerText = formattedDate
+  const pdfCustomerName = document.getElementById('pdfCustomerName')
+  const pdfCustomerPhone = document.getElementById('pdfCustomerPhone')
+  const pdfInvoiceDisplay = document.getElementById('pdfInvoiceDisplay')
+  const pdfDateDisplay = document.getElementById('pdfDateDisplay')
+
+  if (pdfCustomerName) pdfCustomerName.innerText = customerName
+  if (pdfCustomerPhone) pdfCustomerPhone.innerText = customerPhone
+  if (pdfInvoiceDisplay) pdfInvoiceDisplay.innerText = invoiceNo
+  if (pdfDateDisplay) pdfDateDisplay.innerText = formattedDate
 
   let itemsHTML = ''
   let subtotal = 0
 
   // Add accessories
   document.querySelectorAll('.pos-acc-card').forEach((card) => {
-    if (card.querySelector('.pos-check').checked) {
-      const name = card.querySelector('.pos-acc-name').value
-      const qty = Number(card.querySelector('.pos-qty').value)
-      const price = Number(card.querySelector('.pos-price').value)
+    if (card.querySelector('.pos-check')?.checked) {
+      const name = card.querySelector('.pos-acc-name')?.value || 'Accessory'
+      const qty = Number(card.querySelector('.pos-qty')?.value) || 0
+      const price = Number(card.querySelector('.pos-price')?.value) || 0
       const total = qty * price
       subtotal += total
       itemsHTML += `
@@ -288,10 +348,10 @@ function generatePremiumPDF() {
   document.querySelectorAll('.d-name').forEach((d, i) => {
     if (d.value) {
       const model = d.value
-      const storage = document.querySelectorAll('.d-storage')[i].value
-      const imei = document.querySelectorAll('.d-imei')[i].value
-      const qty = Number(document.querySelectorAll('.d-qty')[i].value)
-      const price = Number(document.querySelectorAll('.d-price')[i].value)
+      const storage = document.querySelectorAll('.d-storage')[i]?.value || ''
+      const imei = document.querySelectorAll('.d-imei')[i]?.value || ''
+      const qty = Number(document.querySelectorAll('.d-qty')[i]?.value) || 0
+      const price = Number(document.querySelectorAll('.d-price')[i]?.value) || 0
       const total = qty * price
       subtotal += total
 
@@ -317,13 +377,16 @@ function generatePremiumPDF() {
     itemsHTML = `<tr><td colspan="4" style="text-align: center; padding: 40px; color: #9ca3af;">No items selected</td></tr>`
   }
 
-  document.getElementById('pdfItemsBody').innerHTML = itemsHTML
-  document.getElementById('pdfSubTotal').innerText =
-    `Rs. ${subtotal.toLocaleString()}`
-  document.getElementById('pdfDiscount').innerText =
-    `-Rs. ${discount.toLocaleString()}`
-  document.getElementById('pdfGrandTotal').innerText =
-    `Rs. ${(subtotal - discount).toLocaleString()}`
+  const pdfItemsBody = document.getElementById('pdfItemsBody')
+  const pdfSubTotal = document.getElementById('pdfSubTotal')
+  const pdfDiscount = document.getElementById('pdfDiscount')
+  const pdfGrandTotal = document.getElementById('pdfGrandTotal')
+
+  if (pdfItemsBody) pdfItemsBody.innerHTML = itemsHTML
+  if (pdfSubTotal) pdfSubTotal.innerText = `Rs. ${subtotal.toLocaleString()}`
+  if (pdfDiscount) pdfDiscount.innerText = `-Rs. ${discount.toLocaleString()}`
+  if (pdfGrandTotal)
+    pdfGrandTotal.innerText = `Rs. ${(subtotal - discount).toLocaleString()}`
 
   // Save to history
   const invoiceData = {
@@ -339,113 +402,34 @@ function generatePremiumPDF() {
 
   saveToHistory(invoiceData)
 
-  // Generate PDF with fixed settings
+  // Generate PDF
   generatePDFWithSettings(invoiceNo)
 }
 
-// ==================== FIXED PDF GENERATION FUNCTION - COMPLETELY CENTERED ====================
+// PDF Generation with settings
 function generatePDFWithSettings(filename) {
   const element = document.getElementById('invoice-premium')
-  const invoiceNo =
-    filename || document.getElementById('pdfInvoiceDisplay').innerText
+  if (!element) return
 
-  // Reset element styles for PDF generation
-  element.style.position = 'absolute'
-  element.style.left = '0'
-  element.style.top = '0'
-  element.style.display = 'flex'
-  element.style.justifyContent = 'center'
-  element.style.alignItems = 'flex-start'
-  element.style.width = '210mm'
-  element.style.height = '297mm'
-  element.style.margin = '0'
-  element.style.padding = '0'
-  element.style.background = 'white'
-  element.style.zIndex = '9999'
-
-  // Force reflow to ensure styles are applied
-  void element.offsetHeight
-
-  // PDF generation options - FIXED for proper centering
-  const opt = {
-    margin: [0, 0, 0, 0],
-    filename: `TechnoMobile_${invoiceNo}.pdf`,
-    image: { type: 'jpeg', quality: 1.0 },
-    html2canvas: {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      letterRendering: true,
-      allowTaint: false,
-      windowWidth: 1200,
-      backgroundColor: '#ffffff',
-      onclone: function (clonedDoc) {
-        // Get cloned element
-        const clonedElement = clonedDoc.getElementById('invoice-premium')
-        if (clonedElement) {
-          // Reset all positioning for print
-          clonedElement.style.position = 'relative'
-          clonedElement.style.left = '0'
-          clonedElement.style.top = '0'
-          clonedElement.style.display = 'flex'
-          clonedElement.style.justifyContent = 'center'
-          clonedElement.style.alignItems = 'center'
-          clonedElement.style.width = '210mm'
-          clonedElement.style.height = '297mm'
-          clonedElement.style.margin = '0 auto'
-          clonedElement.style.padding = '0'
-          clonedElement.style.background = 'white'
-
-          // Fix invoice-pdf container
-          const invoicePdf = clonedElement.querySelector('.invoice-pdf')
-          if (invoicePdf) {
-            invoicePdf.style.display = 'flex'
-            invoicePdf.style.flexDirection = 'column'
-            invoicePdf.style.alignItems = 'center'
-            invoicePdf.style.justifyContent = 'flex-start'
-            invoicePdf.style.width = '210mm'
-            invoicePdf.style.padding = '12mm 15mm'
-            invoicePdf.style.margin = '0 auto'
-            invoicePdf.style.background = 'white'
-          }
-
-          // Fix invoice card
-          const invoiceCard = clonedElement.querySelector('.invoice-card')
-          if (invoiceCard) {
-            invoiceCard.style.width = '100%'
-            invoiceCard.style.maxWidth = '170mm'
-            invoiceCard.style.margin = '0 auto'
-            invoiceCard.style.position = 'relative'
-            invoiceCard.style.left = '0'
-            invoiceCard.style.right = '0'
-          }
-
-          // Fix table to prevent cutoff
-          const tables = clonedElement.querySelectorAll('.pdf-table')
-          tables.forEach((table) => {
-            table.style.width = '100%'
-            table.style.tableLayout = 'fixed'
-          })
-        }
-      },
-    },
-    jsPDF: {
-      unit: 'mm',
-      format: 'a4',
-      orientation: 'portrait',
-      compress: true,
-      precision: 16,
-      hotfixes: ['px_scaling'],
-    },
-    pagebreak: { mode: ['css', 'legacy'] },
-  }
+  const invoiceNo = filename || 'invoice'
 
   // Show loading message
   const downloadBtn = document.querySelector('.pos-btn-download')
-  const originalText = downloadBtn.innerHTML
-  downloadBtn.innerHTML =
-    '<i class="fas fa-spinner fa-spin"></i> Generating PDF...'
-  downloadBtn.disabled = true
+  const originalText = downloadBtn ? downloadBtn.innerHTML : 'Download'
+  if (downloadBtn) {
+    downloadBtn.innerHTML =
+      '<i class="fas fa-spinner fa-spin"></i> Generating...'
+    downloadBtn.disabled = true
+  }
+
+  // PDF options
+  const opt = {
+    margin: [0, 0, 0, 0],
+    filename: `TechnoMobile_${invoiceNo}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+  }
 
   // Generate PDF
   html2pdf()
@@ -453,31 +437,22 @@ function generatePDFWithSettings(filename) {
     .from(element)
     .save()
     .then(() => {
-      // Reset button
-      downloadBtn.innerHTML = originalText
-      downloadBtn.disabled = false
-
-      // Hide element again
-      element.style.position = 'absolute'
-      element.style.left = '-9999px'
-      element.style.top = '0'
+      if (downloadBtn) {
+        downloadBtn.innerHTML = originalText
+        downloadBtn.disabled = false
+      }
     })
     .catch((error) => {
-      console.error('PDF Generation Error:', error)
-      alert('Error generating PDF. Please try again.')
-
-      // Reset button
-      downloadBtn.innerHTML = originalText
-      downloadBtn.disabled = false
-
-      // Hide element again
-      element.style.position = 'absolute'
-      element.style.left = '-9999px'
-      element.style.top = '0'
+      console.error('PDF Error:', error)
+      if (downloadBtn) {
+        downloadBtn.innerHTML = originalText
+        downloadBtn.disabled = false
+      }
+      alert('Error generating PDF')
     })
 }
 
-// ==================== SAVE TO HISTORY FUNCTION ====================
+// ==================== HISTORY FUNCTIONS ====================
 function saveToHistory(invoice) {
   const history = loadHistory()
   history.unshift(invoice)
@@ -487,8 +462,7 @@ function saveToHistory(invoice) {
   }
 }
 
-// ==================== DELETE FROM HISTORY FUNCTION ====================
-function deleteFromHistory(index) {
+window.deleteFromHistory = function (index) {
   const history = loadHistory()
   history.splice(index, 1)
   localStorage.setItem(STORAGE_KEYS.INVOICE_HISTORY, JSON.stringify(history))
@@ -497,17 +471,11 @@ function deleteFromHistory(index) {
   }
 }
 
-// ==================== CLEAR HISTORY FUNCTION ====================
-function clearHistory() {
+window.clearHistory = function () {
   if (confirm('Are you sure you want to clear all history?')) {
     localStorage.setItem(STORAGE_KEYS.INVOICE_HISTORY, JSON.stringify([]))
     if (typeof window.displayHistory === 'function') {
       window.displayHistory()
     }
   }
-}
-
-// Check login on page load
-window.onload = function () {
-  checkLogin()
 }
