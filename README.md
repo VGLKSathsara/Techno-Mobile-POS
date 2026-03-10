@@ -1,2 +1,2 @@
 "# Techno-Mobile"
-"# Techno-Mobile-Dilka"
+"# Techno-Mobile-DilkaRishan"
