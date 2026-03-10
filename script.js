@@ -1,4 +1,13 @@
-// ==================== INITIALIZATION ==================
+// script.js - Complete POS System Script
+
+// ==================== STORAGE KEYS ====================
+const STORAGE_KEYS = {
+  INVOICE_HISTORY: 'techno_invoice_history',
+  INVENTORY: 'techno_inventory',
+  USER: 'techno_user',
+}
+
+// ==================== INITIALIZATION ====================
 const defaultInventory = [
   { n: 'iPhone 20W Power Adapter', p: 6500 },
   { n: 'MagSafe Charger', p: 14500 },
@@ -197,31 +206,19 @@ function viewInvoice(index) {
   document.getElementById('pdfGrandTotal').innerText =
     `Rs. ${inv.total.toLocaleString()}`
 
-  // Generate PDF
-  const element = document.getElementById('invoice-premium')
-  element.style.position = 'static'
-  element.style.left = '0'
-
-  const opt = {
-    margin: [0, 0, 0, 0],
-    filename: `TechnoMobile_${inv.invoiceNo}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true, logging: false },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-  }
-
-  html2pdf()
-    .set(opt)
-    .from(element)
-    .save()
-    .then(() => {
-      element.style.position = 'absolute'
-      element.style.left = '-9999px'
-    })
+  // Generate PDF with fixed settings
+  generatePDFWithSettings()
 }
 
-// Generate PDF
+// Load history function (will be overridden by history.js)
+function loadHistory() {
+  const saved = localStorage.getItem(STORAGE_KEYS.INVOICE_HISTORY)
+  return saved ? JSON.parse(saved) : []
+}
+
+// ==================== PDF GENERATION FUNCTION - FIXED VERSION ====================
 function generatePremiumPDF() {
+  // Get data from UI
   const invoiceNo = document.getElementById('inNo').value
   const customerName =
     document.getElementById('inName').value || 'Walk-in Customer'
@@ -246,6 +243,7 @@ function generatePremiumPDF() {
         })
         .replace(/\//g, '/')
 
+  // Update PDF elements
   document.getElementById('pdfCustomerName').innerText = customerName
   document.getElementById('pdfCustomerPhone').innerText = customerPhone
   document.getElementById('pdfInvoiceDisplay').innerText = invoiceNo
@@ -254,6 +252,7 @@ function generatePremiumPDF() {
   let itemsHTML = ''
   let subtotal = 0
 
+  // Add accessories
   document.querySelectorAll('.pos-acc-card').forEach((card) => {
     if (card.querySelector('.pos-check').checked) {
       const name = card.querySelector('.pos-acc-name').value
@@ -275,6 +274,7 @@ function generatePremiumPDF() {
     }
   })
 
+  // Add devices
   document.querySelectorAll('.d-name').forEach((d, i) => {
     if (d.value) {
       const model = d.value
@@ -302,6 +302,7 @@ function generatePremiumPDF() {
     }
   })
 
+  // If no items, show a message
   if (!itemsHTML) {
     itemsHTML = `<tr><td colspan="4" style="text-align: center; padding: 40px; color: #9ca3af;">No items selected</td></tr>`
   }
@@ -326,41 +327,134 @@ function generatePremiumPDF() {
     itemsHTML: itemsHTML,
   }
 
-  if (typeof saveToHistory === 'function') {
-    saveToHistory(invoiceData)
-  }
+  saveToHistory(invoiceData)
 
-  // Generate PDF
+  // Generate PDF with fixed settings
+  generatePDFWithSettings()
+}
+
+// ==================== FIXED PDF GENERATION FUNCTION ====================
+function generatePDFWithSettings() {
   const element = document.getElementById('invoice-premium')
+  const invoiceNo = document.getElementById('pdfInvoiceDisplay').innerText
+
+  // Reset element styles for PDF generation
   element.style.position = 'static'
   element.style.left = '0'
+  element.style.display = 'block'
+  element.style.width = '210mm'
+  element.style.height = '297mm'
+  element.style.margin = '0'
+  element.style.padding = '0'
+  element.style.background = 'white'
 
+  // Force reflow to ensure styles are applied
+  void element.offsetHeight
+
+  // PDF generation options - FIXED for proper margins and alignment
   const opt = {
-    margin: [0, 0, 0, 0],
+    margin: [0, 0, 0, 0], // No margins - we handle with CSS padding
     filename: `TechnoMobile_${invoiceNo}.pdf`,
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: {
-      scale: 2,
+      scale: 2, // Higher scale for better quality
       useCORS: true,
       logging: false,
-      windowWidth: 1200,
       letterRendering: true,
+      allowTaint: false,
+      windowWidth: 1200,
+      onclone: function (clonedDoc) {
+        // Ensure cloned element has correct styles
+        const clonedElement = clonedDoc.getElementById('invoice-premium')
+        if (clonedElement) {
+          clonedElement.style.width = '210mm'
+          clonedElement.style.height = '297mm'
+          clonedElement.style.margin = '0'
+          clonedElement.style.padding = '0'
+          clonedElement.style.background = 'white'
+
+          // Fix any inline styles that might cause issues
+          const invoiceCard = clonedElement.querySelector('.invoice-card')
+          if (invoiceCard) {
+            invoiceCard.style.margin = '0 auto'
+            invoiceCard.style.maxWidth = '170mm'
+          }
+        }
+      },
     },
     jsPDF: {
       unit: 'mm',
       format: 'a4',
       orientation: 'portrait',
+      compress: true,
+      precision: 16,
+      hotfixes: ['px_scaling'], // Fix for scaling issues
     },
+    pagebreak: { mode: ['css', 'legacy'] },
   }
 
+  // Show loading message
+  const originalText = document.querySelector('.pos-btn-download').innerHTML
+  document.querySelector('.pos-btn-download').innerHTML =
+    '<i class="fas fa-spinner fa-spin"></i> Generating PDF...'
+  document.querySelector('.pos-btn-download').disabled = true
+
+  // Generate PDF
   html2pdf()
     .set(opt)
     .from(element)
     .save()
     .then(() => {
+      // Reset button
+      document.querySelector('.pos-btn-download').innerHTML = originalText
+      document.querySelector('.pos-btn-download').disabled = false
+
+      // Hide element again
       element.style.position = 'absolute'
       element.style.left = '-9999px'
     })
+    .catch((error) => {
+      console.error('PDF Generation Error:', error)
+      alert('Error generating PDF. Please try again.')
+
+      // Reset button
+      document.querySelector('.pos-btn-download').innerHTML = originalText
+      document.querySelector('.pos-btn-download').disabled = false
+
+      // Hide element again
+      element.style.position = 'absolute'
+      element.style.left = '-9999px'
+    })
+}
+
+// ==================== SAVE TO HISTORY FUNCTION ====================
+function saveToHistory(invoice) {
+  const history = loadHistory()
+  history.unshift(invoice) // Add to beginning
+  localStorage.setItem(STORAGE_KEYS.INVOICE_HISTORY, JSON.stringify(history))
+  if (typeof window.displayHistory === 'function') {
+    window.displayHistory()
+  }
+}
+
+// ==================== DELETE FROM HISTORY FUNCTION ====================
+function deleteFromHistory(index) {
+  const history = loadHistory()
+  history.splice(index, 1)
+  localStorage.setItem(STORAGE_KEYS.INVOICE_HISTORY, JSON.stringify(history))
+  if (typeof window.displayHistory === 'function') {
+    window.displayHistory()
+  }
+}
+
+// ==================== CLEAR HISTORY FUNCTION ====================
+function clearHistory() {
+  if (confirm('Are you sure you want to clear all history?')) {
+    localStorage.setItem(STORAGE_KEYS.INVOICE_HISTORY, JSON.stringify([]))
+    if (typeof window.displayHistory === 'function') {
+      window.displayHistory()
+    }
+  }
 }
 
 // Check login on page load
