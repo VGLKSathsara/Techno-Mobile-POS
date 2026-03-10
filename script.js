@@ -31,6 +31,16 @@ function saveInventory(inventory) {
   localStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(inventory))
 }
 
+window.validateDiscount = function (input) {
+  const value = parseFloat(input.value) || 0
+  const totalText = document
+    .getElementById('liveTotal')
+    .innerText.replace(/[^0-9.-]/g, '')
+  const total = parseFloat(totalText) || 0
+  if (value < 0) input.value = 0
+  if (value > total) input.value = total
+}
+
 window.login = function () {
   const username = document.getElementById('username').value
   const password = document.getElementById('password').value
@@ -131,12 +141,12 @@ window.addDevice = function () {
     <input type="text" class="d-name" placeholder="Device Model" oninput="recalc()">
     <input type="text" class="d-storage" placeholder="Storage" oninput="recalc()">
     <input type="text" class="d-imei" placeholder="IMEI" oninput="recalc()">
-    <input type="number" class="d-qty" value="1" oninput="recalc()">
+    <input type="number" class="d-qty" value="1" min="1" oninput="recalc()">
     <input type="number" class="d-price" placeholder="Price" oninput="recalc()">
     <button onclick="this.parentElement.remove(); recalc()" style="background:none; border:none; color:#ef4444; font-size:22px; cursor:pointer;">&times;</button>
   `
   deviceArea.appendChild(div)
-  recalc() // Fix: Recalculate immediately when row added
+  recalc()
 }
 
 window.recalc = function () {
@@ -149,9 +159,9 @@ window.recalc = function () {
     }
   })
   document.querySelectorAll('.pos-device-row').forEach((row) => {
-    sub +=
-      (Number(row.querySelector('.d-qty').value) || 0) *
-      (Number(row.querySelector('.d-price').value) || 0)
+    const qty = Number(row.querySelector('.d-qty').value) || 0
+    const price = Number(row.querySelector('.d-price').value) || 0
+    sub += qty * price
   })
   const discount = Number(document.getElementById('inDiscount').value) || 0
   document.getElementById('liveTotal').innerText =
@@ -177,6 +187,22 @@ window.switchTab = function (tab) {
 }
 
 window.generatePremiumPDF = function () {
+  // Check if there are any items
+  const hasAccessories =
+    document.querySelectorAll('.pos-acc-card .pos-check:checked').length > 0
+  const hasDevices = Array.from(
+    document.querySelectorAll('.pos-device-row'),
+  ).some(
+    (row) =>
+      row.querySelector('.d-name') &&
+      row.querySelector('.d-name').value.trim() !== '',
+  )
+
+  if (!hasAccessories && !hasDevices) {
+    alert('Please add at least one item to generate invoice')
+    return
+  }
+
   const invoiceNo = document.getElementById('inNo').value
   const customerName =
     document.getElementById('inName').value || 'Walk-in Customer'
@@ -184,32 +210,73 @@ window.generatePremiumPDF = function () {
     document.getElementById('inPhone').value || 'Not Provided'
   const discount = Number(document.getElementById('inDiscount').value) || 0
 
+  // Update PDF elements
   document.getElementById('pdfCustomerName').innerText = customerName
   document.getElementById('pdfCustomerPhone').innerText = customerPhone
   document.getElementById('pdfInvoiceDisplay').innerText = invoiceNo
-  document.getElementById('pdfDateDisplay').innerText =
-    new Date().toLocaleDateString()
 
+  // Format date properly
+  const today = new Date()
+  const formattedDate = today
+    .toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    })
+    .replace(/\//g, '/')
+  document.getElementById('pdfDateDisplay').innerText = formattedDate
+
+  // Build items table
   let itemsHTML = ''
   let subtotal = 0
-  // Items calculation logic (same as your original but optimized)
+
+  // Add accessories
   document.querySelectorAll('.pos-acc-card').forEach((card) => {
     if (card.querySelector('.pos-check').checked) {
-      const q = Number(card.querySelector('.pos-qty').value)
-      const p = Number(card.querySelector('.pos-price').value)
-      subtotal += q * p
-      itemsHTML += `<tr><td>${card.querySelector('.pos-acc-name').value}</td><td align="center">${q}</td><td align="right">Rs.${p.toLocaleString()}</td><td align="right">Rs.${(q * p).toLocaleString()}</td></tr>`
+      const name = card.querySelector('.pos-acc-name').value || 'Accessory'
+      const qty = Number(card.querySelector('.pos-qty').value) || 1
+      const price = Number(card.querySelector('.pos-price').value) || 0
+      const total = qty * price
+      subtotal += total
+
+      itemsHTML += `<tr>
+        <td style="text-align: left;">${name}</td>
+        <td style="text-align: center;">${qty}</td>
+        <td style="text-align: right;">Rs. ${price.toLocaleString()}</td>
+        <td style="text-align: right;">Rs. ${total.toLocaleString()}</td>
+      </tr>`
     }
   })
+
+  // Add devices
   document.querySelectorAll('.pos-device-row').forEach((row) => {
     const name = row.querySelector('.d-name').value
-    if (name) {
-      const q = Number(row.querySelector('.d-qty').value)
-      const p = Number(row.querySelector('.d-price').value)
-      subtotal += q * p
-      itemsHTML += `<tr><td>${name}</td><td align="center">${q}</td><td align="right">Rs.${p.toLocaleString()}</td><td align="right">Rs.${(q * p).toLocaleString()}</td></tr>`
+    if (name && name.trim() !== '') {
+      const storage = row.querySelector('.d-storage').value
+      const imei = row.querySelector('.d-imei').value
+      const qty = Number(row.querySelector('.d-qty').value) || 1
+      const price = Number(row.querySelector('.d-price').value) || 0
+      const total = qty * price
+      subtotal += total
+
+      let description = name
+      if (storage) description += ` (${storage})`
+      if (imei) description += ` - IMEI: ${imei}`
+
+      itemsHTML += `<tr>
+        <td style="text-align: left;">${description}</td>
+        <td style="text-align: center;">${qty}</td>
+        <td style="text-align: right;">Rs. ${price.toLocaleString()}</td>
+        <td style="text-align: right;">Rs. ${total.toLocaleString()}</td>
+      </tr>`
     }
   })
+
+  // If no items were added (should be caught by validation, but just in case)
+  if (itemsHTML === '') {
+    alert('No items selected')
+    return
+  }
 
   document.getElementById('pdfItemsBody').innerHTML = itemsHTML
   document.getElementById('pdfSubTotal').innerText =
@@ -227,7 +294,7 @@ window.generatePremiumPDF = function () {
     invoiceNo,
     customerName,
     phone: customerPhone,
-    date: new Date().toLocaleDateString(),
+    date: formattedDate,
     total: subtotal - discount,
     itemsHTML,
     subtotal,
@@ -235,28 +302,69 @@ window.generatePremiumPDF = function () {
   })
   localStorage.setItem(STORAGE_KEYS.INVOICE_HISTORY, JSON.stringify(history))
 
+  // Generate PDF with better settings
   generatePDFWithSettings(invoiceNo)
 }
 
 window.generatePDFWithSettings = function (filename) {
   const element = document.getElementById('invoice-premium')
+  if (!element) {
+    console.error('PDF element not found')
+    return
+  }
+
+  // Temporarily show the element for PDF generation
   element.style.position = 'static'
   element.style.left = '0'
   element.style.display = 'block'
+  element.style.visibility = 'visible'
 
+  // Check if html2pdf is available
+  if (typeof html2pdf === 'undefined') {
+    console.error('html2pdf library not loaded')
+    alert('PDF library not loaded. Please refresh the page.')
+    element.style.position = 'absolute'
+    element.style.left = '-9999px'
+    return
+  }
+
+  // Configure PDF options for better formatting
+  const opt = {
+    margin: [0.5, 0.5, 0.5, 0.5],
+    filename: `TM_${filename}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: {
+      scale: 2,
+      letterRendering: true,
+      useCORS: true,
+      logging: false,
+    },
+    jsPDF: {
+      unit: 'mm',
+      format: 'a4',
+      orientation: 'portrait',
+      compress: true,
+    },
+    pagebreak: { mode: ['css', 'legacy'] },
+  }
+
+  // Generate PDF
   html2pdf()
-    .set({
-      margin: 10,
-      filename: `TM_${filename}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    })
+    .set(opt)
     .from(element)
     .save()
     .then(() => {
+      // Hide element after PDF generation
       element.style.position = 'absolute'
       element.style.left = '-9999px'
+      element.style.visibility = 'hidden'
+    })
+    .catch((error) => {
+      console.error('PDF generation failed:', error)
+      alert('Failed to generate PDF. Please try again.')
+      element.style.position = 'absolute'
+      element.style.left = '-9999px'
+      element.style.visibility = 'hidden'
     })
 }
 
