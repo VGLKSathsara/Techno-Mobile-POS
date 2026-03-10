@@ -20,7 +20,14 @@ const defaultInventory = [
 // Load inventory
 function loadInventory() {
   const saved = localStorage.getItem(STORAGE_KEYS.INVENTORY)
-  return saved ? JSON.parse(saved) : defaultInventory
+  if (saved) {
+    try {
+      return JSON.parse(saved)
+    } catch (e) {
+      return defaultInventory
+    }
+  }
+  return defaultInventory
 }
 
 // Save inventory
@@ -59,12 +66,18 @@ window.logout = function () {
 function initializePOS() {
   console.log('Initializing POS...')
 
-  const savedInventory = loadInventory()
+  // Clear accessories grid FIRST
   const accGrid = document.getElementById('accGrid')
-
   if (accGrid) {
-    accGrid.innerHTML = ''
-    savedInventory.forEach((item) => addAcc(item.n, item.p))
+    accGrid.innerHTML = '' // මේක වැදගත්!
+  }
+
+  // Load inventory from localStorage
+  const savedInventory = loadInventory()
+
+  // Add items from saved inventory
+  if (accGrid) {
+    savedInventory.forEach((item) => addAcc(item.n, item.p, false)) // false = don't save again
   }
 
   // Set date
@@ -103,12 +116,16 @@ function generateInvoiceNumber() {
   return `INV-${year}${month}${day}-${random}`
 }
 
-window.addAcc = function (n = 'New Accessory', p = 0) {
+// Add accessory with delete button - FIXED VERSION
+window.addAcc = function (n = 'New Accessory', p = 0, shouldSave = true) {
   const accGrid = document.getElementById('accGrid')
   if (!accGrid) return
 
   const div = document.createElement('div')
   div.className = 'pos-acc-card'
+  div.setAttribute('data-item-name', n)
+  div.setAttribute('data-item-price', p)
+
   div.innerHTML = `
     <input type="checkbox" class="pos-check" onchange="recalc()">
     <div class="pos-acc-info">
@@ -118,19 +135,39 @@ window.addAcc = function (n = 'New Accessory', p = 0) {
         <input type="number" class="pos-price" value="${p}" oninput="recalc()" placeholder="Price">
       </div>
     </div>
+    <button class="acc-delete-btn" onclick="deleteAccessory(this)" title="Remove accessory">
+      <i class="fas fa-times"></i>
+    </button>
   `
   accGrid.appendChild(div)
 
-  // Save to localStorage
-  saveInventoryToStorage()
+  // Save to localStorage only if shouldSave is true (prevent double saving)
+  if (shouldSave) {
+    saveInventoryToStorage()
+  }
+}
+
+// Delete accessory function
+window.deleteAccessory = function (button) {
+  const card = button.closest('.pos-acc-card')
+  if (card) {
+    card.remove()
+    recalc() // Recalculate total after deletion
+    saveInventoryToStorage() // Update localStorage
+  }
 }
 
 function saveInventoryToStorage() {
   const inventory = []
   document.querySelectorAll('.pos-acc-card').forEach((card) => {
-    const name = card.querySelector('.pos-acc-name')?.value || 'New Accessory'
-    const price = Number(card.querySelector('.pos-price')?.value) || 0
-    inventory.push({ n: name, p: price })
+    const nameInput = card.querySelector('.pos-acc-name')
+    const priceInput = card.querySelector('.pos-price')
+
+    if (nameInput && priceInput) {
+      const name = nameInput.value || 'New Accessory'
+      const price = Number(priceInput.value) || 0
+      inventory.push({ n: name, p: price })
+    }
   })
   saveInventory(inventory)
 }
