@@ -35,6 +35,15 @@ function saveInventory(inventory) {
   localStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(inventory))
 }
 
+// Debounce function for auto-save
+let saveTimeout
+function debounceSave() {
+  clearTimeout(saveTimeout)
+  saveTimeout = setTimeout(() => {
+    saveInventoryToStorage()
+  }, 500)
+}
+
 // ==================== LOGIN FUNCTIONS ====================
 window.login = function () {
   console.log('Login function called')
@@ -145,10 +154,10 @@ window.addAcc = function (n = 'New Accessory', p = 0, shouldSave = true) {
   div.innerHTML = `
     <input type="checkbox" class="pos-check" onchange="recalc()">
     <div class="pos-acc-info">
-      <input type="text" class="pos-acc-name" value="${n}" oninput="recalc()" placeholder="Item name">
+      <input type="text" class="pos-acc-name" value="${n}" oninput="recalc(); debounceSave()" placeholder="Item name">
       <div class="pos-acc-meta">
         <input type="number" class="pos-qty" value="1" min="1" oninput="recalc()">
-        <input type="number" class="pos-price" value="${p}" oninput="recalc()" placeholder="Price">
+        <input type="number" class="pos-price" value="${p}" oninput="recalc(); debounceSave()" placeholder="Price">
       </div>
     </div>
     <button class="acc-delete-btn" onclick="deleteAccessory(this)" title="Remove accessory">
@@ -167,11 +176,13 @@ window.addAcc = function (n = 'New Accessory', p = 0, shouldSave = true) {
 
 // Delete accessory function
 window.deleteAccessory = function (button) {
-  const card = button.closest('.pos-acc-card')
-  if (card) {
-    card.remove()
-    recalc() // Recalculate total after deletion
-    saveInventoryToStorage() // Update localStorage
+  if (confirm('Remove this accessory from inventory?')) {
+    const card = button.closest('.pos-acc-card')
+    if (card) {
+      card.remove()
+      recalc() // Recalculate total after deletion
+      saveInventoryToStorage() // Update localStorage
+    }
   }
 }
 
@@ -182,9 +193,12 @@ function saveInventoryToStorage() {
     const priceInput = card.querySelector('.pos-price')
 
     if (nameInput && priceInput) {
-      const name = nameInput.value || 'New Accessory'
+      const name = nameInput.value?.trim() || ''
       const price = Number(priceInput.value) || 0
-      inventory.push({ n: name, p: price })
+      // Only save if name exists and price > 0
+      if (name && price > 0) {
+        inventory.push({ n: name, p: price })
+      }
     }
   })
   saveInventory(inventory)
@@ -200,37 +214,82 @@ window.addDevice = function () {
     <input type="text" class="d-name" placeholder="Device Model" oninput="recalc()">
     <input type="text" class="d-storage" placeholder="Storage" oninput="recalc()">
     <input type="text" class="d-imei" placeholder="IMEI / Serial" oninput="recalc()">
-    <input type="number" class="d-qty" value="1" oninput="recalc()" style="text-align: center;">
-    <input type="number" class="d-price" placeholder="Price" oninput="recalc()">
-    <button onclick="this.parentElement.remove(); recalc()" style="background:none; border:none; color:#ef4444; font-size:22px; cursor:pointer;">&times;</button>
+    <input type="number" class="d-qty" value="1" min="1" oninput="recalc()" style="text-align: center;">
+    <input type="number" class="d-price" placeholder="Price" min="0" oninput="recalc()">
+    <button class="device-delete-btn" onclick="deleteDeviceRow(this)" title="Remove device">&times;</button>
   `
   deviceArea.appendChild(div)
 }
 
-window.recalc = function () {
+// Device delete function
+window.deleteDeviceRow = function (button) {
+  if (confirm('Remove this device from invoice?')) {
+    button.closest('.pos-device-row').remove()
+    recalc()
+  }
+}
+
+// Calculate subtotal helper function
+function calculateSubtotal() {
   let sub = 0
 
   // Calculate accessories
   document.querySelectorAll('.pos-acc-card').forEach((card) => {
     if (card.querySelector('.pos-check')?.checked) {
-      const qty = Number(card.querySelector('.pos-qty')?.value) || 0
-      const price = Number(card.querySelector('.pos-price')?.value) || 0
+      const qtyInput = card.querySelector('.pos-qty')
+      const priceInput = card.querySelector('.pos-price')
+
+      const qty = qtyInput ? Number(qtyInput.value) || 0 : 0
+      const price = priceInput ? Number(priceInput.value) || 0 : 0
       sub += qty * price
     }
   })
 
   // Calculate devices
-  document.querySelectorAll('.d-name').forEach((d, i) => {
-    if (d.value) {
-      const qty = Number(document.querySelectorAll('.d-qty')[i]?.value) || 0
-      const price = Number(document.querySelectorAll('.d-price')[i]?.value) || 0
+  const deviceNames = document.querySelectorAll('.d-name')
+  const deviceQtys = document.querySelectorAll('.d-qty')
+  const devicePrices = document.querySelectorAll('.d-price')
+
+  deviceNames.forEach((d, i) => {
+    if (d && d.value && d.value.trim() !== '') {
+      const qty = deviceQtys[i] ? Number(deviceQtys[i].value) || 0 : 0
+      const price = devicePrices[i] ? Number(devicePrices[i].value) || 0 : 0
       sub += qty * price
     }
   })
 
+  return sub
+}
+
+// Validate discount input
+window.validateDiscount = function (input) {
+  if (input.value < 0) input.value = 0
+  if (isNaN(input.value)) input.value = 0
+
+  // Calculate current subtotal
+  const sub = calculateSubtotal()
+
+  // Ensure discount doesn't exceed subtotal
+  if (Number(input.value) > sub) {
+    alert('Discount cannot exceed subtotal!')
+    input.value = sub
+  }
+}
+
+window.recalc = function () {
+  const sub = calculateSubtotal()
+
   // Apply discount
-  const discount = Number(document.getElementById('inDiscount')?.value) || 0
-  const total = sub - discount
+  const discountInput = document.getElementById('inDiscount')
+  let discount = discountInput ? Number(discountInput.value) || 0 : 0
+
+  // Ensure discount doesn't exceed subtotal
+  if (discount > sub) {
+    discount = sub
+    if (discountInput) discountInput.value = sub
+  }
+
+  const total = Math.max(0, sub - discount) // Ensure total isn't negative
 
   // Update display
   const liveTotal = document.getElementById('liveTotal')
@@ -248,11 +307,13 @@ window.switchTab = function (tab) {
 
   if (tab === 'pos') {
     posTab.style.display = 'block'
+    historyTab.style.display = 'none'
     historyTab.classList.remove('active')
     navItems[0]?.classList.add('active')
     navItems[1]?.classList.remove('active')
   } else {
     posTab.style.display = 'none'
+    historyTab.style.display = 'block'
     historyTab.classList.add('active')
     navItems[0]?.classList.remove('active')
     navItems[1]?.classList.add('active')
@@ -418,9 +479,9 @@ window.generatePDFWithSettings = function (filename) {
     return
   }
 
-  // Make sure element is visible for PDF generation
+  // Make sure element is visible for PDF generation but offscreen
   element.style.position = 'absolute'
-  element.style.left = '0'
+  element.style.left = '-9999px'
   element.style.top = '0'
   element.style.display = 'block'
   element.style.zIndex = '9999'
