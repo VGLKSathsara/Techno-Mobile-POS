@@ -9,7 +9,7 @@ window.displayHistory = function () {
 
   if (history.length === 0) {
     historyList.innerHTML =
-      '<p style="text-align:center; padding:20px;">No history found</p>'
+      '<p style="text-align:center; padding:20px; color: #64748b;">No history found</p>'
     return
   }
 
@@ -18,14 +18,14 @@ window.displayHistory = function () {
       (inv, index) => `
     <div class="history-item">
       <div class="history-info">
-        <h4>${inv.customerName}</h4>
+        <h4>${inv.customerName || 'Walk-in Customer'}</h4>
         <div class="history-meta">
-          <span># ${inv.invoiceNo}</span> | <span>${inv.date}</span>
+          <span># ${inv.invoiceNo || 'N/A'}</span> | <span>${inv.date || 'N/A'}</span>
         </div>
       </div>
-      <div class="history-amount">Rs. ${inv.total.toLocaleString()}</div>
+      <div class="history-amount">Rs. ${(inv.total || 0).toLocaleString()}</div>
       <div class="history-actions">
-        <button class="history-btn view" onclick="viewInvoice(${index})"><i class="fas fa-eye"></i></button>
+        <button class="history-btn view" onclick="viewInvoice(${index})"><i class="fas fa-eye"></i> View</button>
         <button class="history-btn delete" onclick="deleteFromHistory(${index})"><i class="fas fa-trash"></i></button>
       </div>
     </div>
@@ -35,44 +35,89 @@ window.displayHistory = function () {
 }
 
 window.viewInvoice = function (index) {
-  const history = JSON.parse(
-    localStorage.getItem('techno_invoice_history') || '[]',
-  )
-  const inv = history[index]
-  if (!inv) return
+  try {
+    const history = JSON.parse(
+      localStorage.getItem('techno_invoice_history') || '[]',
+    )
+    const inv = history[index]
+    if (!inv) {
+      console.error('Invoice not found')
+      alert('Invoice not found')
+      return
+    }
 
-  document.getElementById('pdfCustomerName').innerText = inv.customerName
-  document.getElementById('pdfCustomerPhone').innerText = inv.phone
-  document.getElementById('pdfInvoiceDisplay').innerText = inv.invoiceNo
-  document.getElementById('pdfDateDisplay').innerText = inv.date
-  document.getElementById('pdfItemsBody').innerHTML = inv.itemsHTML
-  document.getElementById('pdfSubTotal').innerText =
-    `Rs. ${inv.subtotal.toLocaleString()}`
-  document.getElementById('pdfDiscount').innerText =
-    `-Rs. ${inv.discount.toLocaleString()}`
-  document.getElementById('pdfGrandTotal').innerText =
-    `Rs. ${inv.total.toLocaleString()}`
+    // Check if elements exist
+    const elements = [
+      'pdfCustomerName',
+      'pdfCustomerPhone',
+      'pdfInvoiceDisplay',
+      'pdfDateDisplay',
+      'pdfItemsBody',
+      'pdfSubTotal',
+      'pdfDiscount',
+      'pdfGrandTotal',
+    ]
 
-  // Delay added to ensure DOM is rendered before PDF capture
-  setTimeout(() => {
-    generatePDFWithSettings(inv.invoiceNo)
-  }, 500)
+    for (const elId of elements) {
+      if (!document.getElementById(elId)) {
+        console.error(`Element ${elId} not found`)
+        alert('PDF template not found')
+        return
+      }
+    }
+
+    document.getElementById('pdfCustomerName').innerText =
+      inv.customerName || 'Walk-in Customer'
+    document.getElementById('pdfCustomerPhone').innerText =
+      inv.phone || 'Not Provided'
+    document.getElementById('pdfInvoiceDisplay').innerText =
+      inv.invoiceNo || 'N/A'
+    document.getElementById('pdfDateDisplay').innerText =
+      inv.date || new Date().toLocaleDateString()
+    document.getElementById('pdfItemsBody').innerHTML =
+      inv.itemsHTML ||
+      '<tr><td colspan="4" style="text-align: center;">No items</td></tr>'
+    document.getElementById('pdfSubTotal').innerText =
+      `Rs. ${(inv.subtotal || 0).toLocaleString()}`
+    document.getElementById('pdfDiscount').innerText =
+      `-Rs. ${(inv.discount || 0).toLocaleString()}`
+    document.getElementById('pdfGrandTotal').innerText =
+      `Rs. ${(inv.total || 0).toLocaleString()}`
+
+    // Delay added to ensure DOM is rendered before PDF capture
+    setTimeout(() => {
+      generatePDFWithSettings(inv.invoiceNo || 'invoice')
+    }, 500)
+  } catch (error) {
+    console.error('Error viewing invoice:', error)
+    alert('Error loading invoice')
+  }
 }
 
 window.deleteFromHistory = function (index) {
   if (confirm('Delete this invoice?')) {
-    const history = JSON.parse(
-      localStorage.getItem('techno_invoice_history') || '[]',
-    )
-    history.splice(index, 1)
-    localStorage.setItem('techno_invoice_history', JSON.stringify(history))
-    displayHistory()
+    try {
+      const history = JSON.parse(
+        localStorage.getItem('techno_invoice_history') || '[]',
+      )
+      history.splice(index, 1)
+      localStorage.setItem('techno_invoice_history', JSON.stringify(history))
+      displayHistory()
+    } catch (error) {
+      console.error('Error deleting invoice:', error)
+      alert('Error deleting invoice')
+    }
   }
 }
 
 window.clearHistory = function () {
   if (confirm('Clear all history?')) {
-    localStorage.setItem('techno_invoice_history', '[]')
-    displayHistory()
+    try {
+      localStorage.setItem('techno_invoice_history', '[]')
+      displayHistory()
+    } catch (error) {
+      console.error('Error clearing history:', error)
+      alert('Error clearing history')
+    }
   }
 }
