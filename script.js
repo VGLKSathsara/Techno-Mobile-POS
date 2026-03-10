@@ -1,4 +1,4 @@
-// script.js - Complete POS System Script
+// script.js - Main POS System Script
 
 // ==================== STORAGE KEYS ====================
 const STORAGE_KEYS = {
@@ -30,13 +30,18 @@ function saveInventory(inventory) {
 
 // ==================== LOGIN FUNCTIONS ====================
 window.login = function () {
+  console.log('Login function called')
+
   const username = document.getElementById('username').value
   const password = document.getElementById('password').value
 
   if (username === 'DilkaRishan' && password === 'Dilka789') {
+    console.log('Login successful')
+
     document.getElementById('loginPage').style.display = 'none'
     document.getElementById('posSystem').style.display = 'block'
     document.getElementById('loggedUser').innerText = 'DilkaRishan'
+
     initializePOS()
   } else {
     alert('Invalid credentials! Use DilkaRishan / Dilka789')
@@ -44,12 +49,16 @@ window.login = function () {
 }
 
 window.logout = function () {
+  console.log('Logout function called')
+
   document.getElementById('loginPage').style.display = 'block'
   document.getElementById('posSystem').style.display = 'none'
 }
 
 // ==================== POS FUNCTIONS ====================
 function initializePOS() {
+  console.log('Initializing POS...')
+
   const savedInventory = loadInventory()
   const accGrid = document.getElementById('accGrid')
 
@@ -58,18 +67,31 @@ function initializePOS() {
     savedInventory.forEach((item) => addAcc(item.n, item.p))
   }
 
-  document.getElementById('inDate').valueAsDate = new Date()
-  document.getElementById('liveDate').innerText = new Date().toLocaleDateString(
-    'en-US',
-    {
+  // Set date
+  const dateInput = document.getElementById('inDate')
+  if (dateInput) {
+    dateInput.valueAsDate = new Date()
+  }
+
+  const liveDate = document.getElementById('liveDate')
+  if (liveDate) {
+    liveDate.innerText = new Date().toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
-    },
-  )
+    })
+  }
 
-  document.getElementById('inNo').value = generateInvoiceNumber()
-  displayHistory()
+  // Generate invoice number
+  const invoiceInput = document.getElementById('inNo')
+  if (invoiceInput) {
+    invoiceInput.value = generateInvoiceNumber()
+  }
+
+  // Display history
+  if (typeof displayHistory === 'function') {
+    displayHistory()
+  }
 }
 
 function generateInvoiceNumber() {
@@ -98,6 +120,8 @@ window.addAcc = function (n = 'New Accessory', p = 0) {
     </div>
   `
   accGrid.appendChild(div)
+
+  // Save to localStorage
   saveInventoryToStorage()
 }
 
@@ -131,6 +155,7 @@ window.addDevice = function () {
 window.recalc = function () {
   let sub = 0
 
+  // Calculate accessories
   document.querySelectorAll('.pos-acc-card').forEach((card) => {
     if (card.querySelector('.pos-check')?.checked) {
       const qty = Number(card.querySelector('.pos-qty')?.value) || 0
@@ -139,6 +164,7 @@ window.recalc = function () {
     }
   })
 
+  // Calculate devices
   document.querySelectorAll('.d-name').forEach((d, i) => {
     if (d.value) {
       const qty = Number(document.querySelectorAll('.d-qty')[i]?.value) || 0
@@ -147,11 +173,15 @@ window.recalc = function () {
     }
   })
 
+  // Apply discount
   const discount = Number(document.getElementById('inDiscount')?.value) || 0
   const total = sub - discount
 
+  // Update display
   const liveTotal = document.getElementById('liveTotal')
-  if (liveTotal) liveTotal.innerText = 'Rs. ' + total.toLocaleString()
+  if (liveTotal) {
+    liveTotal.innerText = 'Rs. ' + total.toLocaleString()
+  }
 }
 
 window.switchTab = function (tab) {
@@ -171,95 +201,19 @@ window.switchTab = function (tab) {
     historyTab.classList.add('active')
     navItems[0]?.classList.remove('active')
     navItems[1]?.classList.add('active')
-    displayHistory()
-  }
-}
 
-// ==================== HISTORY FUNCTIONS ====================
-function displayHistory() {
-  const historyList = document.getElementById('historyList')
-  if (!historyList) return
-
-  const saved = localStorage.getItem(STORAGE_KEYS.INVOICE_HISTORY)
-  const history = saved ? JSON.parse(saved) : []
-
-  if (history.length === 0) {
-    historyList.innerHTML = `
-      <div style="text-align: center; padding: 50px; color: var(--gray);">
-        <i class="fas fa-history" style="font-size: 48px; margin-bottom: 20px; opacity: 0.5;"></i>
-        <p>No invoice history found</p>
-      </div>
-    `
-    return
-  }
-
-  historyList.innerHTML = history
-    .map(
-      (inv, index) => `
-    <div class="history-item">
-      <div class="history-info">
-        <h4>${inv.customerName || 'Customer'}</h4>
-        <div class="history-meta">
-          <span><i class="fas fa-file-invoice"></i> ${inv.invoiceNo || 'N/A'}</span>
-          <span><i class="fas fa-calendar"></i> ${inv.date || 'N/A'}</span>
-          <span><i class="fas fa-phone"></i> ${inv.phone || 'N/A'}</span>
-        </div>
-      </div>
-      <div class="history-amount">Rs. ${(inv.total || 0).toLocaleString()}</div>
-      <div class="history-actions">
-        <button class="history-btn view" onclick="viewInvoice(${index})">
-          <i class="fas fa-eye"></i> View
-        </button>
-        <button class="history-btn delete" onclick="deleteFromHistory(${index})">
-          <i class="fas fa-trash"></i>
-        </button>
-      </div>
-    </div>
-  `,
-    )
-    .join('')
-}
-
-window.viewInvoice = function (index) {
-  const history = JSON.parse(
-    localStorage.getItem(STORAGE_KEYS.INVOICE_HISTORY) || '[]',
-  )
-  const inv = history[index]
-  if (!inv) return
-
-  document.getElementById('pdfCustomerName').innerText = inv.customerName
-  document.getElementById('pdfCustomerPhone').innerText = inv.phone
-  document.getElementById('pdfInvoiceDisplay').innerText = inv.invoiceNo
-  document.getElementById('pdfDateDisplay').innerText = inv.date
-  document.getElementById('pdfItemsBody').innerHTML = inv.itemsHTML
-  document.getElementById('pdfSubTotal').innerText =
-    `Rs. ${inv.subtotal.toLocaleString()}`
-  document.getElementById('pdfDiscount').innerText =
-    `-Rs. ${inv.discount.toLocaleString()}`
-  document.getElementById('pdfGrandTotal').innerText =
-    `Rs. ${inv.total.toLocaleString()}`
-
-  generatePDFWithSettings(inv.invoiceNo)
-}
-
-window.deleteFromHistory = function (index) {
-  const history = JSON.parse(
-    localStorage.getItem(STORAGE_KEYS.INVOICE_HISTORY) || '[]',
-  )
-  history.splice(index, 1)
-  localStorage.setItem(STORAGE_KEYS.INVOICE_HISTORY, JSON.stringify(history))
-  displayHistory()
-}
-
-window.clearHistory = function () {
-  if (confirm('Are you sure you want to clear all history?')) {
-    localStorage.setItem(STORAGE_KEYS.INVOICE_HISTORY, JSON.stringify([]))
-    displayHistory()
+    // Display history when switching to history tab
+    if (typeof displayHistory === 'function') {
+      displayHistory()
+    }
   }
 }
 
 // ==================== PDF GENERATION FUNCTIONS ====================
 window.generatePremiumPDF = function () {
+  console.log('Generating PDF...')
+
+  // Get data from UI
   const invoiceNo = document.getElementById('inNo')?.value || 'INV-001'
   const customerName =
     document.getElementById('inName')?.value || 'Walk-in Customer'
@@ -280,6 +234,7 @@ window.generatePremiumPDF = function () {
         year: 'numeric',
       })
 
+  // Update PDF elements
   document.getElementById('pdfCustomerName').innerText = customerName
   document.getElementById('pdfCustomerPhone').innerText = customerPhone
   document.getElementById('pdfInvoiceDisplay').innerText = invoiceNo
@@ -288,6 +243,7 @@ window.generatePremiumPDF = function () {
   let itemsHTML = ''
   let subtotal = 0
 
+  // Add accessories
   document.querySelectorAll('.pos-acc-card').forEach((card) => {
     if (card.querySelector('.pos-check')?.checked) {
       const name = card.querySelector('.pos-acc-name')?.value || 'Accessory'
@@ -309,6 +265,7 @@ window.generatePremiumPDF = function () {
     }
   })
 
+  // Add devices
   document.querySelectorAll('.d-name').forEach((d, i) => {
     if (d.value) {
       const model = d.value
@@ -336,6 +293,7 @@ window.generatePremiumPDF = function () {
     }
   })
 
+  // If no items, show a message
   if (!itemsHTML) {
     itemsHTML = `<tr><td colspan="4" style="text-align: center; padding: 40px; color: #9ca3af;">No items selected</td></tr>`
   }
@@ -348,15 +306,16 @@ window.generatePremiumPDF = function () {
   document.getElementById('pdfGrandTotal').innerText =
     `Rs. ${(subtotal - discount).toLocaleString()}`
 
+  // Save to history
   const invoiceData = {
-    invoiceNo,
-    customerName,
+    invoiceNo: invoiceNo,
+    customerName: customerName,
     phone: customerPhone,
     date: formattedDate,
-    subtotal,
-    discount,
+    subtotal: subtotal,
+    discount: discount,
     total: subtotal - discount,
-    itemsHTML,
+    itemsHTML: itemsHTML,
   }
 
   const history = JSON.parse(
@@ -364,12 +323,18 @@ window.generatePremiumPDF = function () {
   )
   history.unshift(invoiceData)
   localStorage.setItem(STORAGE_KEYS.INVOICE_HISTORY, JSON.stringify(history))
-  displayHistory()
 
+  // Refresh history display
+  if (typeof displayHistory === 'function') {
+    displayHistory()
+  }
+
+  // Generate PDF
   generatePDFWithSettings(invoiceNo)
 }
 
-function generatePDFWithSettings(filename) {
+// PDF generation function
+window.generatePDFWithSettings = function (filename) {
   const element = document.getElementById('invoice-premium')
   if (!element) return
 
@@ -412,6 +377,9 @@ function generatePDFWithSettings(filename) {
 
 // ==================== INITIALIZATION ====================
 window.onload = function () {
+  console.log('Page loaded')
+
+  // Always show login page first
   document.getElementById('loginPage').style.display = 'block'
   document.getElementById('posSystem').style.display = 'none'
 }
