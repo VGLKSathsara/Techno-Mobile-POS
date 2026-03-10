@@ -47,7 +47,7 @@ window.login = function () {
   if (username === 'DilkaRishan' && password === 'Dilka789') {
     document.getElementById('loginPage').style.display = 'none'
     document.getElementById('posSystem').style.display = 'block'
-    document.getElementById('loggedUser').innerText = 'DilkaRishan'
+    document.getElementById('loggedUser').innerText = username
     initializePOS()
   } else {
     alert('Invalid credentials!')
@@ -57,6 +57,8 @@ window.login = function () {
 window.logout = function () {
   document.getElementById('loginPage').style.display = 'block'
   document.getElementById('posSystem').style.display = 'none'
+  document.getElementById('username').value = ''
+  document.getElementById('password').value = ''
 }
 
 function initializePOS() {
