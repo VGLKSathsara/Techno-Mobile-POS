@@ -75,11 +75,7 @@ window.viewInvoice = function (index) {
     `Rs. ${inv.total.toLocaleString()}`
 
   // Generate PDF
-  if (typeof generatePDFWithSettings === 'function') {
-    generatePDFWithSettings(inv.invoiceNo)
-  } else {
-    console.error('generatePDFWithSettings function not found')
-  }
+  generatePDFWithSettings(inv.invoiceNo)
 }
 
 // Delete from history
