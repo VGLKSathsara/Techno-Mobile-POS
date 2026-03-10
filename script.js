@@ -69,7 +69,13 @@ function initializePOS() {
   // Clear accessories grid FIRST
   const accGrid = document.getElementById('accGrid')
   if (accGrid) {
-    accGrid.innerHTML = '' // මේක වැදගත්!
+    accGrid.innerHTML = '' // Important: Clear existing items
+  }
+
+  // Clear device area
+  const deviceArea = document.getElementById('deviceArea')
+  if (deviceArea) {
+    deviceArea.innerHTML = ''
   }
 
   // Load inventory from localStorage
@@ -101,6 +107,18 @@ function initializePOS() {
     invoiceInput.value = generateInvoiceNumber()
   }
 
+  // Reset discount
+  const discountInput = document.getElementById('inDiscount')
+  if (discountInput) {
+    discountInput.value = 0
+  }
+
+  // Reset total
+  const liveTotal = document.getElementById('liveTotal')
+  if (liveTotal) {
+    liveTotal.innerText = 'Rs. 0.00'
+  }
+
   // Display history
   if (typeof displayHistory === 'function') {
     displayHistory()
@@ -116,15 +134,13 @@ function generateInvoiceNumber() {
   return `INV-${year}${month}${day}-${random}`
 }
 
-// Add accessory with delete button - FIXED VERSION
+// Add accessory with delete button
 window.addAcc = function (n = 'New Accessory', p = 0, shouldSave = true) {
   const accGrid = document.getElementById('accGrid')
   if (!accGrid) return
 
   const div = document.createElement('div')
   div.className = 'pos-acc-card'
-  div.setAttribute('data-item-name', n)
-  div.setAttribute('data-item-price', p)
 
   div.innerHTML = `
     <input type="checkbox" class="pos-check" onchange="recalc()">
@@ -141,10 +157,12 @@ window.addAcc = function (n = 'New Accessory', p = 0, shouldSave = true) {
   `
   accGrid.appendChild(div)
 
-  // Save to localStorage only if shouldSave is true (prevent double saving)
+  // Save to localStorage only if shouldSave is true
   if (shouldSave) {
     saveInventoryToStorage()
   }
+
+  recalc() // Recalculate total
 }
 
 // Delete accessory function
@@ -246,9 +264,22 @@ window.switchTab = function (tab) {
   }
 }
 
-// ==================== PDF GENERATION FUNCTIONS ====================
+// ==================== FIXED PDF GENERATION FUNCTIONS ====================
 window.generatePremiumPDF = function () {
   console.log('Generating PDF...')
+
+  // Check if any items are selected
+  const selectedAccessories = document.querySelectorAll(
+    '.pos-acc-card .pos-check:checked',
+  ).length
+  const selectedDevices = Array.from(
+    document.querySelectorAll('.d-name'),
+  ).filter((d) => d.value && d.value.trim() !== '').length
+
+  if (selectedAccessories === 0 && selectedDevices === 0) {
+    alert('Please select at least one item to generate invoice!')
+    return
+  }
 
   // Get data from UI
   const invoiceNo = document.getElementById('inNo')?.value || 'INV-001'
@@ -271,11 +302,27 @@ window.generatePremiumPDF = function () {
         year: 'numeric',
       })
 
-  // Update PDF elements
-  document.getElementById('pdfCustomerName').innerText = customerName
-  document.getElementById('pdfCustomerPhone').innerText = customerPhone
-  document.getElementById('pdfInvoiceDisplay').innerText = invoiceNo
-  document.getElementById('pdfDateDisplay').innerText = formattedDate
+  // Update PDF elements - CHECK IF ELEMENTS EXIST
+  const pdfCustomerName = document.getElementById('pdfCustomerName')
+  const pdfCustomerPhone = document.getElementById('pdfCustomerPhone')
+  const pdfInvoiceDisplay = document.getElementById('pdfInvoiceDisplay')
+  const pdfDateDisplay = document.getElementById('pdfDateDisplay')
+  const pdfItemsBody = document.getElementById('pdfItemsBody')
+  const pdfSubTotal = document.getElementById('pdfSubTotal')
+  const pdfDiscount = document.getElementById('pdfDiscount')
+  const pdfGrandTotal = document.getElementById('pdfGrandTotal')
+
+  if (!pdfCustomerName || !pdfItemsBody) {
+    console.error('PDF elements not found!')
+    alert('Error: PDF template elements missing')
+    return
+  }
+
+  // Set values
+  pdfCustomerName.innerText = customerName
+  pdfCustomerPhone.innerText = customerPhone
+  pdfInvoiceDisplay.innerText = invoiceNo
+  pdfDateDisplay.innerText = formattedDate
 
   let itemsHTML = ''
   let subtotal = 0
@@ -304,7 +351,7 @@ window.generatePremiumPDF = function () {
 
   // Add devices
   document.querySelectorAll('.d-name').forEach((d, i) => {
-    if (d.value) {
+    if (d.value && d.value.trim() !== '') {
       const model = d.value
       const storage = document.querySelectorAll('.d-storage')[i]?.value || ''
       const imei = document.querySelectorAll('.d-imei')[i]?.value || ''
@@ -330,18 +377,11 @@ window.generatePremiumPDF = function () {
     }
   })
 
-  // If no items, show a message
-  if (!itemsHTML) {
-    itemsHTML = `<tr><td colspan="4" style="text-align: center; padding: 40px; color: #9ca3af;">No items selected</td></tr>`
-  }
-
-  document.getElementById('pdfItemsBody').innerHTML = itemsHTML
-  document.getElementById('pdfSubTotal').innerText =
-    `Rs. ${subtotal.toLocaleString()}`
-  document.getElementById('pdfDiscount').innerText =
-    `-Rs. ${discount.toLocaleString()}`
-  document.getElementById('pdfGrandTotal').innerText =
-    `Rs. ${(subtotal - discount).toLocaleString()}`
+  // Set the HTML content
+  pdfItemsBody.innerHTML = itemsHTML
+  pdfSubTotal.innerText = `Rs. ${subtotal.toLocaleString()}`
+  pdfDiscount.innerText = `-Rs. ${discount.toLocaleString()}`
+  pdfGrandTotal.innerText = `Rs. ${(subtotal - discount).toLocaleString()}`
 
   // Save to history
   const invoiceData = {
@@ -373,7 +413,18 @@ window.generatePremiumPDF = function () {
 // PDF generation function
 window.generatePDFWithSettings = function (filename) {
   const element = document.getElementById('invoice-premium')
-  if (!element) return
+  if (!element) {
+    console.error('PDF element not found!')
+    return
+  }
+
+  // Make sure element is visible for PDF generation
+  element.style.position = 'absolute'
+  element.style.left = '0'
+  element.style.top = '0'
+  element.style.display = 'block'
+  element.style.zIndex = '9999'
+  element.style.background = 'white'
 
   const downloadBtn = document.querySelector('.pos-btn-download')
   const originalText = downloadBtn?.innerHTML || 'Download'
@@ -384,32 +435,55 @@ window.generatePDFWithSettings = function (filename) {
     downloadBtn.disabled = true
   }
 
-  const opt = {
-    margin: [0, 0, 0, 0],
-    filename: `TechnoMobile_${filename}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2 },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-  }
+  // Small delay to ensure DOM updates
+  setTimeout(() => {
+    const opt = {
+      margin: [0, 0, 0, 0],
+      filename: `TechnoMobile_${filename}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        allowTaint: false,
+        letterRendering: true,
+      },
+      jsPDF: {
+        unit: 'mm',
+        format: 'a4',
+        orientation: 'portrait',
+        compress: true,
+      },
+    }
 
-  html2pdf()
-    .set(opt)
-    .from(element)
-    .save()
-    .then(() => {
-      if (downloadBtn) {
-        downloadBtn.innerHTML = originalText
-        downloadBtn.disabled = false
-      }
-    })
-    .catch((error) => {
-      console.error('PDF Error:', error)
-      if (downloadBtn) {
-        downloadBtn.innerHTML = originalText
-        downloadBtn.disabled = false
-      }
-      alert('Error generating PDF')
-    })
+    html2pdf()
+      .set(opt)
+      .from(element)
+      .save()
+      .then(() => {
+        // Reset
+        element.style.position = 'absolute'
+        element.style.left = '-9999px'
+
+        if (downloadBtn) {
+          downloadBtn.innerHTML = originalText
+          downloadBtn.disabled = false
+        }
+        console.log('PDF generated successfully')
+      })
+      .catch((error) => {
+        console.error('PDF Error:', error)
+        element.style.position = 'absolute'
+        element.style.left = '-9999px'
+
+        if (downloadBtn) {
+          downloadBtn.innerHTML = originalText
+          downloadBtn.disabled = false
+        }
+        alert('Error generating PDF: ' + error.message)
+      })
+  }, 200) // 200ms delay
 }
 
 // ==================== INITIALIZATION ====================
