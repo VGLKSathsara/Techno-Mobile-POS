@@ -692,7 +692,7 @@ body {
   transform: scale(1.05);
 }
 
-/* ==================== FIXED PDF INVOICE STYLES - ALIGNMENT FIXED ==================== */
+/* ==================== FIXED PDF INVOICE STYLES - COMPLETELY CENTERED ==================== */
 #invoice-premium {
   width: 210mm;
   min-height: 297mm;
@@ -704,33 +704,33 @@ body {
   top: 0;
   font-family: 'Inter', sans-serif;
   box-sizing: border-box;
-}
-
-.invoice-pdf {
-  width: 100%;
-  height: 100%;
-  padding: 15mm;
-  margin: 0;
-  background: white;
-  box-sizing: border-box;
   display: flex;
   justify-content: center;
   align-items: flex-start;
 }
 
+.invoice-pdf {
+  width: 210mm;
+  min-height: 297mm;
+  padding: 12mm 15mm;
+  margin: 0 auto;
+  background: white;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .invoice-card {
   width: 100%;
   max-width: 170mm;
-  margin: 0 auto;
   background: white;
   border-radius: 24px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   border: 1px solid var(--border);
   page-break-inside: avoid;
-  position: relative;
-  left: 50%;
-  transform: translateX(-50%);
+  margin: 0 auto;
 }
 
 /* PDF Header */
@@ -776,7 +776,6 @@ body {
   margin: 0;
   letter-spacing: -0.5px;
   color: white;
-  white-space: nowrap;
 }
 
 .pdf-brand-text p {
@@ -784,7 +783,6 @@ body {
   opacity: 0.9;
   margin-top: 4px;
   color: white;
-  white-space: nowrap;
 }
 
 .pdf-badge {
@@ -801,7 +799,6 @@ body {
   margin: 0;
   letter-spacing: 1px;
   color: white;
-  white-space: nowrap;
 }
 
 /* PDF Info Grid */
@@ -875,7 +872,6 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-bottom: 2px solid var(--border);
-  white-space: nowrap;
 }
 
 .pdf-table td {
@@ -1014,12 +1010,11 @@ body {
   #invoice-premium {
     position: static;
     left: 0;
-    margin: 0;
-    padding: 0;
+    margin: 0 auto;
   }
 
   .invoice-pdf {
-    padding: 15mm;
+    padding: 12mm 15mm;
   }
 
   .invoice-card {
@@ -1067,29 +1062,5 @@ body {
     flex-direction: column;
     gap: 20px;
     text-align: center;
-  }
-
-  .pdf-header-top {
-    flex-direction: column;
-    gap: 15px;
-    text-align: center;
-  }
-
-  .pdf-brand {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .pdf-brand-text h1,
-  .pdf-brand-text p {
-    white-space: normal;
-  }
-
-  .pdf-info-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .pdf-footer {
-    grid-template-columns: 1fr;
   }
 }
