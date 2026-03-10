@@ -71,6 +71,11 @@ function checkLogin() {
 function initializePOS() {
   // Load inventory from localStorage
   const savedInventory = loadInventory()
+
+  // Clear existing accessories first
+  const accGrid = document.getElementById('accGrid')
+  accGrid.innerHTML = ''
+
   savedInventory.forEach((item) => addAcc(item.n, item.p))
 
   // Set date
@@ -120,6 +125,11 @@ function addAcc(n = 'New Accessory', p = 0) {
   document.getElementById('accGrid').appendChild(div)
 
   // Save to localStorage
+  saveInventoryToStorage()
+}
+
+// Save inventory to localStorage
+function saveInventoryToStorage() {
   const inventory = []
   document.querySelectorAll('.pos-acc-card').forEach((card) => {
     const name = card.querySelector('.pos-acc-name').value
@@ -207,16 +217,16 @@ function viewInvoice(index) {
     `Rs. ${inv.total.toLocaleString()}`
 
   // Generate PDF with fixed settings
-  generatePDFWithSettings()
+  generatePDFWithSettings(inv.invoiceNo)
 }
 
-// Load history function (will be overridden by history.js)
+// Load history function
 function loadHistory() {
   const saved = localStorage.getItem(STORAGE_KEYS.INVOICE_HISTORY)
   return saved ? JSON.parse(saved) : []
 }
 
-// ==================== PDF GENERATION FUNCTION - FIXED VERSION ====================
+// ==================== PDF GENERATION FUNCTION - MAIN ====================
 function generatePremiumPDF() {
   // Get data from UI
   const invoiceNo = document.getElementById('inNo').value
@@ -330,55 +340,92 @@ function generatePremiumPDF() {
   saveToHistory(invoiceData)
 
   // Generate PDF with fixed settings
-  generatePDFWithSettings()
+  generatePDFWithSettings(invoiceNo)
 }
 
-// ==================== FIXED PDF GENERATION FUNCTION ====================
-function generatePDFWithSettings() {
+// ==================== FIXED PDF GENERATION FUNCTION - COMPLETELY CENTERED ====================
+function generatePDFWithSettings(filename) {
   const element = document.getElementById('invoice-premium')
-  const invoiceNo = document.getElementById('pdfInvoiceDisplay').innerText
+  const invoiceNo =
+    filename || document.getElementById('pdfInvoiceDisplay').innerText
 
   // Reset element styles for PDF generation
-  element.style.position = 'static'
+  element.style.position = 'absolute'
   element.style.left = '0'
-  element.style.display = 'block'
+  element.style.top = '0'
+  element.style.display = 'flex'
+  element.style.justifyContent = 'center'
+  element.style.alignItems = 'flex-start'
   element.style.width = '210mm'
   element.style.height = '297mm'
   element.style.margin = '0'
   element.style.padding = '0'
   element.style.background = 'white'
+  element.style.zIndex = '9999'
 
   // Force reflow to ensure styles are applied
   void element.offsetHeight
 
-  // PDF generation options - FIXED for proper margins and alignment
+  // PDF generation options - FIXED for proper centering
   const opt = {
-    margin: [0, 0, 0, 0], // No margins - we handle with CSS padding
+    margin: [0, 0, 0, 0],
     filename: `TechnoMobile_${invoiceNo}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
+    image: { type: 'jpeg', quality: 1.0 },
     html2canvas: {
-      scale: 2, // Higher scale for better quality
+      scale: 2,
       useCORS: true,
       logging: false,
       letterRendering: true,
       allowTaint: false,
       windowWidth: 1200,
+      backgroundColor: '#ffffff',
       onclone: function (clonedDoc) {
-        // Ensure cloned element has correct styles
+        // Get cloned element
         const clonedElement = clonedDoc.getElementById('invoice-premium')
         if (clonedElement) {
+          // Reset all positioning for print
+          clonedElement.style.position = 'relative'
+          clonedElement.style.left = '0'
+          clonedElement.style.top = '0'
+          clonedElement.style.display = 'flex'
+          clonedElement.style.justifyContent = 'center'
+          clonedElement.style.alignItems = 'center'
           clonedElement.style.width = '210mm'
           clonedElement.style.height = '297mm'
-          clonedElement.style.margin = '0'
+          clonedElement.style.margin = '0 auto'
           clonedElement.style.padding = '0'
           clonedElement.style.background = 'white'
 
-          // Fix any inline styles that might cause issues
+          // Fix invoice-pdf container
+          const invoicePdf = clonedElement.querySelector('.invoice-pdf')
+          if (invoicePdf) {
+            invoicePdf.style.display = 'flex'
+            invoicePdf.style.flexDirection = 'column'
+            invoicePdf.style.alignItems = 'center'
+            invoicePdf.style.justifyContent = 'flex-start'
+            invoicePdf.style.width = '210mm'
+            invoicePdf.style.padding = '12mm 15mm'
+            invoicePdf.style.margin = '0 auto'
+            invoicePdf.style.background = 'white'
+          }
+
+          // Fix invoice card
           const invoiceCard = clonedElement.querySelector('.invoice-card')
           if (invoiceCard) {
-            invoiceCard.style.margin = '0 auto'
+            invoiceCard.style.width = '100%'
             invoiceCard.style.maxWidth = '170mm'
+            invoiceCard.style.margin = '0 auto'
+            invoiceCard.style.position = 'relative'
+            invoiceCard.style.left = '0'
+            invoiceCard.style.right = '0'
           }
+
+          // Fix table to prevent cutoff
+          const tables = clonedElement.querySelectorAll('.pdf-table')
+          tables.forEach((table) => {
+            table.style.width = '100%'
+            table.style.tableLayout = 'fixed'
+          })
         }
       },
     },
@@ -388,16 +435,17 @@ function generatePDFWithSettings() {
       orientation: 'portrait',
       compress: true,
       precision: 16,
-      hotfixes: ['px_scaling'], // Fix for scaling issues
+      hotfixes: ['px_scaling'],
     },
     pagebreak: { mode: ['css', 'legacy'] },
   }
 
   // Show loading message
-  const originalText = document.querySelector('.pos-btn-download').innerHTML
-  document.querySelector('.pos-btn-download').innerHTML =
+  const downloadBtn = document.querySelector('.pos-btn-download')
+  const originalText = downloadBtn.innerHTML
+  downloadBtn.innerHTML =
     '<i class="fas fa-spinner fa-spin"></i> Generating PDF...'
-  document.querySelector('.pos-btn-download').disabled = true
+  downloadBtn.disabled = true
 
   // Generate PDF
   html2pdf()
@@ -406,31 +454,33 @@ function generatePDFWithSettings() {
     .save()
     .then(() => {
       // Reset button
-      document.querySelector('.pos-btn-download').innerHTML = originalText
-      document.querySelector('.pos-btn-download').disabled = false
+      downloadBtn.innerHTML = originalText
+      downloadBtn.disabled = false
 
       // Hide element again
       element.style.position = 'absolute'
       element.style.left = '-9999px'
+      element.style.top = '0'
     })
     .catch((error) => {
       console.error('PDF Generation Error:', error)
       alert('Error generating PDF. Please try again.')
 
       // Reset button
-      document.querySelector('.pos-btn-download').innerHTML = originalText
-      document.querySelector('.pos-btn-download').disabled = false
+      downloadBtn.innerHTML = originalText
+      downloadBtn.disabled = false
 
       // Hide element again
       element.style.position = 'absolute'
       element.style.left = '-9999px'
+      element.style.top = '0'
     })
 }
 
 // ==================== SAVE TO HISTORY FUNCTION ====================
 function saveToHistory(invoice) {
   const history = loadHistory()
-  history.unshift(invoice) // Add to beginning
+  history.unshift(invoice)
   localStorage.setItem(STORAGE_KEYS.INVOICE_HISTORY, JSON.stringify(history))
   if (typeof window.displayHistory === 'function') {
     window.displayHistory()
