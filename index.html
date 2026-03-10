@@ -4,37 +4,61 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Techno Mobile | Premium POS System</title>
+
+    <!-- Fonts & Icons -->
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+
+    <!-- CSS -->
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <!-- Login Page -->
+    <!-- ==================== LOGIN PAGE ==================== -->
     <div id="loginPage" class="login-container">
       <div class="login-icon">TM</div>
       <h2>Welcome Back!</h2>
       <p class="login-subtitle">Login to Techno Mobile POS</p>
-      
+
       <div class="login-input-group">
         <label>Username</label>
-        <input type="text" id="username" placeholder="Enter username">
+        <input
+          type="text"
+          id="username"
+          placeholder="Enter username"
+          autocomplete="off"
+        />
       </div>
-      
+
       <div class="login-input-group">
         <label>Password</label>
-        <input type="password" id="password" placeholder="Enter password">
+        <input
+          type="password"
+          id="password"
+          placeholder="Enter password"
+          autocomplete="off"
+        />
       </div>
-      
+
       <button class="login-btn" onclick="login()">
-        <i class="fas fa-sign-in-alt" style="margin-right: 8px;"></i>
+        <i class="fas fa-sign-in-alt" style="margin-right: 8px"></i>
         Login to Dashboard
       </button>
+
+      <div
+        class="login-footer"
+        style="color: var(--gray); font-size: 13px; margin-top: 20px"
+      >
+        Use: DilkaRishan / Dilka789
+      </div>
     </div>
 
-    <!-- Main POS System -->
+    <!-- ==================== MAIN POS SYSTEM ==================== -->
     <div id="posSystem" class="pos-wrapper">
       <!-- Navigation -->
       <div class="pos-nav">
@@ -45,7 +69,7 @@
             <p>POS Pro System</p>
           </div>
         </div>
-        
+
         <div class="nav-menu">
           <div class="nav-item active" onclick="switchTab('pos')">
             <i class="fas fa-shopping-cart"></i>
@@ -56,7 +80,7 @@
             History
           </div>
         </div>
-        
+
         <div class="user-info">
           <div class="user-badge">
             <i class="fas fa-user-circle"></i>
@@ -70,7 +94,7 @@
 
       <!-- Main Content -->
       <div class="pos-content">
-        <!-- POS Tab -->
+        <!-- ==================== POS TAB ==================== -->
         <div id="posTab">
           <div class="pos-header">
             <div>
@@ -78,7 +102,7 @@
               <p>Create new invoice</p>
             </div>
             <div class="pos-invoice-meta">
-              <input type="text" id="inNo" value="INV-2026-001" />
+              <input type="text" id="inNo" value="INV-2026-001" readonly />
               <p id="liveDate"></p>
             </div>
           </div>
@@ -86,11 +110,21 @@
           <div class="pos-input-grid">
             <div class="pos-input-group">
               <span class="pos-label">Customer Name</span>
-              <input type="text" id="inName" placeholder="Client Full Name" class="pos-input" />
+              <input
+                type="text"
+                id="inName"
+                placeholder="Client Full Name"
+                class="pos-input"
+              />
             </div>
             <div class="pos-input-group">
               <span class="pos-label">Contact No</span>
-              <input type="text" id="inPhone" placeholder="07x xxxxxxx" class="pos-input" />
+              <input
+                type="text"
+                id="inPhone"
+                placeholder="07x xxxxxxx"
+                class="pos-input"
+              />
             </div>
             <div class="pos-input-group">
               <span class="pos-label">Date</span>
@@ -110,7 +144,7 @@
           </div>
           <div id="deviceArea"></div>
           <button class="pos-btn-add" onclick="addDevice()">
-            <i class="fas fa-plus" style="margin-right: 8px;"></i>
+            <i class="fas fa-plus" style="margin-right: 8px"></i>
             Add Another Device
           </button>
 
@@ -121,7 +155,12 @@
             </div>
             <div class="pos-discount-input">
               <span class="pos-label">Discount (Rs.)</span>
-              <input type="number" id="inDiscount" value="0" oninput="recalc()" />
+              <input
+                type="number"
+                id="inDiscount"
+                value="0"
+                oninput="recalc()"
+              />
             </div>
           </div>
 
@@ -137,11 +176,18 @@
           </div>
         </div>
 
-        <!-- History Tab -->
+        <!-- ==================== HISTORY TAB ==================== -->
         <div id="historyTab" class="history-panel">
           <div class="history-header">
-            <h3><i class="fas fa-history" style="margin-right: 10px;"></i>Invoice History</h3>
-            <button class="pos-btn-add" style="width: auto; padding: 10px 20px;" onclick="clearHistory()">
+            <h3>
+              <i class="fas fa-history" style="margin-right: 10px"></i>Invoice
+              History
+            </h3>
+            <button
+              class="pos-btn-add"
+              style="width: auto; padding: 10px 20px"
+              onclick="clearHistory()"
+            >
               <i class="fas fa-trash"></i> Clear All
             </button>
           </div>
@@ -152,11 +198,11 @@
       </div>
     </div>
 
-    <!-- Invoice PDF Template -->
+    <!-- ==================== PDF INVOICE TEMPLATE ==================== -->
     <div id="invoice-premium">
       <div class="invoice-pdf">
         <div class="invoice-card">
-          <!-- PDF Header with Gradient -->
+          <!-- PDF Header -->
           <div class="pdf-header">
             <div class="pdf-header-top">
               <div class="pdf-brand">
@@ -170,23 +216,31 @@
                 <h2>INVOICE</h2>
               </div>
             </div>
-            
-            <!-- Client Info in Header -->
+
+            <!-- Client Info -->
             <div class="pdf-info-grid">
               <div class="pdf-info-block">
                 <div class="pdf-info-label">Invoice To</div>
-                <div class="pdf-info-value" id="pdfCustomerName">Lanishka</div>
-                <div class="pdf-info-sub" id="pdfCustomerPhone">0703743365</div>
+                <div class="pdf-info-value" id="pdfCustomerName">
+                  Walk-in Customer
+                </div>
+                <div class="pdf-info-sub" id="pdfCustomerPhone">
+                  Not Provided
+                </div>
               </div>
               <div class="pdf-info-block">
-                <div style="display: flex; justify-content: space-between;">
+                <div style="display: flex; justify-content: space-between">
                   <div>
                     <div class="pdf-info-label">Invoice #</div>
-                    <div class="pdf-info-value" id="pdfInvoiceDisplay">INV-20260310-658</div>
+                    <div class="pdf-info-value" id="pdfInvoiceDisplay">
+                      INV-001
+                    </div>
                   </div>
                   <div>
                     <div class="pdf-info-label">Date</div>
-                    <div class="pdf-info-value" id="pdfDateDisplay">03/10/2026</div>
+                    <div class="pdf-info-value" id="pdfDateDisplay">
+                      03/10/2026
+                    </div>
                   </div>
                 </div>
               </div>
@@ -219,7 +273,7 @@
                 </div>
                 <div class="pdf-total-row">
                   <span>Discount</span>
-                  <span id="pdfDiscount" style="color: #ef4444;">-Rs. 0</span>
+                  <span id="pdfDiscount" style="color: #ef4444">-Rs. 0</span>
                 </div>
                 <div class="pdf-total-row pdf-grand-total">
                   <span>Grand Total</span>
@@ -232,14 +286,26 @@
             <div class="pdf-footer">
               <div class="pdf-thankyou">
                 <h3>Thank you for your business!</h3>
-                <p>We appreciate your trust in Techno Mobile.<br>For any inquiries, please contact our support team.</p>
+                <p>
+                  We appreciate your trust in Techno Mobile.<br />For any
+                  inquiries, please contact our support team.
+                </p>
               </div>
               <div class="pdf-terms">
                 <h4>Terms & Conditions</h4>
                 <ul>
-                  <li><i class="fas fa-check-circle"></i> Genuine products with 1 year warranty</li>
-                  <li><i class="fas fa-check-circle"></i> Physical damage not covered</li>
-                  <li><i class="fas fa-check-circle"></i> Warranty valid with original invoice</li>
+                  <li>
+                    <i class="fas fa-check-circle"></i> Genuine products with 1
+                    year warranty
+                  </li>
+                  <li>
+                    <i class="fas fa-check-circle"></i> Physical damage not
+                    covered
+                  </li>
+                  <li>
+                    <i class="fas fa-check-circle"></i> Warranty valid with
+                    original invoice
+                  </li>
                 </ul>
               </div>
             </div>
@@ -248,6 +314,7 @@
       </div>
     </div>
 
+    <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="history.js"></script>
     <script src="script.js"></script>
