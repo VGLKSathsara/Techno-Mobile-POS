@@ -484,6 +484,23 @@ body {
   border-color: var(--primary);
 }
 
+.device-delete-btn {
+  background: none;
+  border: none;
+  color: var(--danger);
+  font-size: 22px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.device-delete-btn:hover {
+  transform: scale(1.1);
+  color: #dc2626;
+}
+
 .pos-btn-add {
   width: 100%;
   padding: 16px;
@@ -831,9 +848,15 @@ body {
   padding: 25px 30px;
 }
 
+.pdf-table-container {
+  page-break-inside: avoid;
+  overflow-x: auto;
+}
+
 .pdf-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .pdf-table th {
@@ -847,27 +870,56 @@ body {
   border-bottom: 2px solid var(--border);
 }
 
+.pdf-table th:first-child,
+.pdf-table td:first-child {
+  width: 45%;
+}
+
+.pdf-table th:nth-child(2),
+.pdf-table td:nth-child(2) {
+  width: 10%;
+  text-align: center;
+}
+
+.pdf-table th:nth-child(3),
+.pdf-table td:nth-child(3) {
+  width: 20%;
+  text-align: right;
+}
+
+.pdf-table th:nth-child(4),
+.pdf-table td:nth-child(4) {
+  width: 25%;
+  text-align: right;
+}
+
 .pdf-table td {
   padding: 14px 10px;
   border-bottom: 1px solid var(--border);
   font-size: 13px;
   color: var(--dark);
+  word-wrap: break-word;
 }
 
 .pdf-item-title {
   font-weight: 600;
   margin-bottom: 3px;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 
 .pdf-item-sub {
   font-size: 11px;
   color: var(--gray);
+  word-wrap: break-word;
 }
 
 .pdf-totals {
   display: flex;
   justify-content: flex-end;
-  margin: 15px 0 20px;
+  margin: 20px 0 30px;
+  page-break-inside: avoid;
 }
 
 .pdf-totals-box {
@@ -898,9 +950,10 @@ body {
   display: grid;
   grid-template-columns: 1.5fr 1fr;
   gap: 25px;
-  margin-top: 20px;
+  margin-top: 30px;
   padding-top: 20px;
   border-top: 2px solid var(--border);
+  page-break-inside: avoid;
 }
 
 .pdf-terms {
@@ -927,24 +980,141 @@ body {
   color: var(--secondary);
 }
 
-/* Responsive */
+/* Enhanced Responsive */
 @media (max-width: 768px) {
   .pos-nav {
     flex-direction: column;
     gap: 15px;
+    padding: 15px;
+  }
+
+  .nav-menu {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .pos-header {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .pos-invoice-meta {
+    text-align: left;
+    width: 100%;
+  }
+
+  .pos-invoice-meta input {
+    text-align: left;
+    width: 100%;
   }
 
   .pos-input-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+    padding: 20px;
+  }
+
+  .pos-acc-grid {
     grid-template-columns: 1fr;
   }
 
   .pos-device-row {
     grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .pos-device-row input {
+    width: 100%;
+  }
+
+  .pos-discount-card {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+
+  .pos-discount-input {
+    width: 100%;
   }
 
   .pos-bottom-bar {
     flex-direction: column;
     gap: 20px;
     text-align: center;
+  }
+
+  .pos-btn-download {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .history-item {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+
+  .history-meta {
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .history-amount {
+    margin-right: 0;
+  }
+
+  .history-actions {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .pdf-footer {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .pdf-table {
+    font-size: 12px;
+  }
+
+  .pdf-table th,
+  .pdf-table td {
+    padding: 8px 5px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-container {
+    padding: 30px 20px;
+  }
+
+  .pos-header h1 {
+    font-size: 24px;
+  }
+
+  .pos-total-amount {
+    font-size: 28px;
+  }
+
+  .nav-item {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .nav-item i {
+    font-size: 14px;
+  }
+
+  .user-badge {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+
+  .brand-text h2 {
+    font-size: 20px;
+  }
+
+  .brand-text p {
+    font-size: 10px;
   }
 }
