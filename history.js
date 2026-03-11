@@ -74,9 +74,12 @@ window.viewInvoice = function (index) {
       inv.invoiceNo || 'N/A'
     document.getElementById('pdfDateDisplay').innerText =
       inv.date || new Date().toLocaleDateString()
+
+    // Fixed: Better handling for missing itemsHTML
     document.getElementById('pdfItemsBody').innerHTML =
       inv.itemsHTML ||
-      '<tr><td colspan="4" style="text-align: center;">No items</td></tr>'
+      '<tr><td colspan="4" style="text-align: center; padding: 20px;">No items found</td></tr>'
+
     document.getElementById('pdfSubTotal').innerText =
       `Rs. ${(inv.subtotal || 0).toLocaleString()}`
     document.getElementById('pdfDiscount').innerText =
@@ -106,18 +109,6 @@ window.deleteFromHistory = function (index) {
     } catch (error) {
       console.error('Error deleting invoice:', error)
       alert('Error deleting invoice')
-    }
-  }
-}
-
-window.clearHistory = function () {
-  if (confirm('Clear all history?')) {
-    try {
-      localStorage.setItem('techno_invoice_history', '[]')
-      displayHistory()
-    } catch (error) {
-      console.error('Error clearing history:', error)
-      alert('Error clearing history')
     }
   }
 }
