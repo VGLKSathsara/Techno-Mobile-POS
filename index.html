@@ -124,6 +124,8 @@
                 id="inPhone"
                 placeholder="07x xxxxxxx"
                 class="pos-input"
+                oninput="validatePhone(this)"
+                maxlength="10"
               />
             </div>
             <div class="pos-input-group">
@@ -155,17 +157,36 @@
             </div>
             <div class="pos-discount-input">
               <span class="pos-label">Discount (Rs.)</span>
-              <input
-                type="number"
-                id="inDiscount"
-                value="0"
-                min="0"
-                step="100"
-                oninput="
-                  validateDiscount(this)
-                  recalc()
-                "
-              />
+              <div style="display: flex; gap: 10px">
+                <input
+                  type="number"
+                  id="inDiscount"
+                  value="0"
+                  min="0"
+                  step="100"
+                  style="
+                    flex: 1;
+                    padding: 14px 18px;
+                    border-radius: 14px;
+                    border: 2px solid var(--border);
+                    font-family: 'Inter', sans-serif;
+                  "
+                />
+                <button
+                  onclick="applyDiscount()"
+                  style="
+                    padding: 14px 20px;
+                    background: var(--primary);
+                    color: white;
+                    border: none;
+                    border-radius: 14px;
+                    font-weight: 600;
+                    cursor: pointer;
+                  "
+                >
+                  Apply
+                </button>
+              </div>
             </div>
           </div>
 
