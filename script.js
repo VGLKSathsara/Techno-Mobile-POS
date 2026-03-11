@@ -31,14 +31,29 @@ function saveInventory(inventory) {
   localStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(inventory))
 }
 
-window.validateDiscount = function (input) {
-  const value = parseFloat(input.value) || 0
-  const totalText = document
-    .getElementById('liveTotal')
-    .innerText.replace(/[^0-9.-]/g, '')
-  const total = parseFloat(totalText) || 0
-  if (value < 0) input.value = 0
-  if (value > total) input.value = total
+// Phone number validation
+window.validatePhone = function (input) {
+  input.value = input.value.replace(/[^0-9]/g, '')
+  if (input.value.length > 10) input.value = input.value.slice(0, 10)
+}
+
+// Apply discount function
+window.applyDiscount = function () {
+  const discountInput = document.getElementById('inDiscount')
+  let discount = parseFloat(discountInput.value) || 0
+
+  // Get total
+  const totalText = document.getElementById('liveTotal').innerText
+  const total =
+    parseFloat(totalText.replace(/[^0-9.-]/g, '').replace(/,/g, '')) || 0
+
+  // Validate
+  if (discount < 0) discount = 0
+  if (discount > total) discount = total
+
+  // Update
+  discountInput.value = discount
+  recalc()
 }
 
 window.login = function () {
@@ -217,15 +232,13 @@ window.generatePremiumPDF = function () {
   document.getElementById('pdfCustomerPhone').innerText = customerPhone
   document.getElementById('pdfInvoiceDisplay').innerText = invoiceNo
 
-  // Format date properly
+  // Better date format
   const today = new Date()
-  const formattedDate = today
-    .toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    })
-    .replace(/\//g, '/')
+  const formattedDate = today.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
   document.getElementById('pdfDateDisplay').innerText = formattedDate
 
   // Build items table
@@ -262,8 +275,8 @@ window.generatePremiumPDF = function () {
       subtotal += total
 
       let description = name
-      if (storage) description += ` (${storage})`
-      if (imei) description += ` - IMEI: ${imei}`
+      if (storage && storage.trim() !== '') description += ` (${storage})`
+      if (imei && imei.trim() !== '') description += ` - IMEI: ${imei}`
 
       itemsHTML += `<tr>
         <td style="text-align: left;">${description}</td>
@@ -274,7 +287,7 @@ window.generatePremiumPDF = function () {
     }
   })
 
-  // If no items were added (should be caught by validation, but just in case)
+  // If no items were added
   if (itemsHTML === '') {
     alert('No items selected')
     return
@@ -304,7 +317,7 @@ window.generatePremiumPDF = function () {
   })
   localStorage.setItem(STORAGE_KEYS.INVOICE_HISTORY, JSON.stringify(history))
 
-  // Generate PDF with better settings
+  // Generate PDF
   generatePDFWithSettings(invoiceNo)
 }
 
@@ -368,6 +381,14 @@ window.generatePDFWithSettings = function (filename) {
       element.style.left = '-9999px'
       element.style.visibility = 'hidden'
     })
+}
+
+// Fixed clearHistory function
+window.clearHistory = function () {
+  if (confirm('Clear all history? This action cannot be undone.')) {
+    localStorage.setItem(STORAGE_KEYS.INVOICE_HISTORY, '[]')
+    if (typeof displayHistory === 'function') displayHistory()
+  }
 }
 
 window.onload = () => {
