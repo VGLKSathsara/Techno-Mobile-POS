@@ -23,7 +23,7 @@ window.displayHistory = function () {
           <span># ${inv.invoiceNo || 'N/A'}</span> | <span>${inv.date || 'N/A'}</span>
         </div>
       </div>
-      <div class="history-amount">Rs. ${(inv.total || 0).toLocaleString()}</div>
+      <div class="history-amount">Rs. ${(inv.total || 0).toFixed(2)}</div>
       <div class="history-actions">
         <button class="history-btn view" onclick="viewInvoice(${index})"><i class="fas fa-eye"></i> View</button>
         <button class="history-btn delete" onclick="deleteFromHistory(${index})"><i class="fas fa-trash"></i></button>
@@ -75,19 +75,17 @@ window.viewInvoice = function (index) {
     document.getElementById('pdfDateDisplay').innerText =
       inv.date || new Date().toLocaleDateString()
 
-    // Fixed: Better handling for missing itemsHTML
     document.getElementById('pdfItemsBody').innerHTML =
       inv.itemsHTML ||
       '<tr><td colspan="4" style="text-align: center; padding: 20px;">No items found</td></tr>'
 
     document.getElementById('pdfSubTotal').innerText =
-      `Rs. ${(inv.subtotal || 0).toLocaleString()}`
+      `Rs. ${(inv.subtotal || 0).toFixed(2)}`
     document.getElementById('pdfDiscount').innerText =
-      `-Rs. ${(inv.discount || 0).toLocaleString()}`
+      `-Rs. ${(inv.discount || 0).toFixed(2)}`
     document.getElementById('pdfGrandTotal').innerText =
-      `Rs. ${(inv.total || 0).toLocaleString()}`
+      `Rs. ${(inv.total || 0).toFixed(2)}`
 
-    // Delay added to ensure DOM is rendered before PDF capture
     setTimeout(() => {
       generatePDFWithSettings(inv.invoiceNo || 'invoice')
     }, 500)

@@ -15,6 +15,11 @@ const defaultInventory = [
   { n: 'Power Bank 20,000mAh', p: 8900 },
 ]
 
+// පළමු වතාවට default inventory එක save කරන්න
+if (!localStorage.getItem(STORAGE_KEYS.INVENTORY)) {
+  localStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(defaultInventory))
+}
+
 function loadInventory() {
   const saved = localStorage.getItem(STORAGE_KEYS.INVENTORY)
   if (saved) {
@@ -29,6 +34,7 @@ function loadInventory() {
 
 function saveInventory(inventory) {
   localStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(inventory))
+  console.log('Inventory saved:', inventory) // Debugging
 }
 
 // Phone number validation
@@ -42,10 +48,17 @@ window.applyDiscount = function () {
   const discountInput = document.getElementById('inDiscount')
   let discount = parseFloat(discountInput.value) || 0
 
-  // Get total
+  // Get total - නිවැරදිව parse කරන්න
   const totalText = document.getElementById('liveTotal').innerText
-  const total =
-    parseFloat(totalText.replace(/[^0-9.-]/g, '').replace(/,/g, '')) || 0
+
+  // "Rs. 499.50" වගේ text එකකින් number එක ගන්න
+  let totalNumber = totalText.replace('Rs.', '').trim()
+
+  // Comma තිබුනොත් ඉවත් කරන්න
+  totalNumber = totalNumber.replace(/,/g, '')
+
+  // Float එකට convert කරන්න
+  const total = parseFloat(totalNumber) || 0
 
   // Validate
   if (discount < 0) discount = 0
@@ -53,6 +66,8 @@ window.applyDiscount = function () {
 
   // Update
   discountInput.value = discount
+
+  // Recalculate
   recalc()
 }
 
@@ -76,6 +91,7 @@ window.logout = function () {
   document.getElementById('password').value = ''
 }
 
+// FIXED initializePOS function - saved inventory එක පෙන්වන්න
 function initializePOS() {
   const accGrid = document.getElementById('accGrid')
   if (accGrid) accGrid.innerHTML = ''
@@ -83,7 +99,11 @@ function initializePOS() {
   const deviceArea = document.getElementById('deviceArea')
   if (deviceArea) deviceArea.innerHTML = ''
 
+  // Saved inventory එක load කරන්න
   const savedInventory = loadInventory()
+  console.log('Loading inventory:', savedInventory) // Debugging
+
+  // Accessories display කරන්න
   if (accGrid) {
     savedInventory.forEach((item) => addAcc(item.n, item.p, false))
   }
@@ -112,6 +132,7 @@ function generateInvoiceNumber() {
   return `INV-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${Math.floor(Math.random() * 900 + 100)}`
 }
 
+// FIXED addAcc function - name/price edit කරද්දී save වෙන්න
 window.addAcc = function (n = 'New Accessory', p = 0, shouldSave = true) {
   const accGrid = document.getElementById('accGrid')
   if (!accGrid) return
@@ -120,32 +141,42 @@ window.addAcc = function (n = 'New Accessory', p = 0, shouldSave = true) {
   div.innerHTML = `
     <input type="checkbox" class="pos-check" onchange="recalc()">
     <div class="pos-acc-info">
-      <input type="text" class="pos-acc-name" value="${n}" oninput="recalc()">
+      <input type="text" class="pos-acc-name" value="${n}" oninput="recalc(); saveInventoryToStorage()">
       <div class="pos-acc-meta">
         <input type="number" class="pos-qty" value="1" min="1" oninput="recalc()">
-        <input type="number" class="pos-price" value="${p}" oninput="recalc()">
+        <input type="number" class="pos-price" value="${p}" oninput="recalc(); saveInventoryToStorage()">
       </div>
     </div>
     <button class="acc-delete-btn" onclick="deleteAccessory(this)"><i class="fas fa-times"></i></button>
   `
   accGrid.appendChild(div)
-  if (shouldSave) saveInventoryToStorage()
+  if (shouldSave) {
+    saveInventoryToStorage() // අලුත් එකක් add කරද්දී save වෙන්න
+  }
   recalc()
 }
 
 window.deleteAccessory = function (button) {
-  button.closest('.pos-acc-card').remove()
-  recalc()
-  saveInventoryToStorage()
+  if (confirm('Delete this accessory?')) {
+    button.closest('.pos-acc-card').remove()
+    recalc()
+    saveInventoryToStorage() // delete කරද්දී save වෙන්න
+  }
 }
 
+// FIXED saveInventoryToStorage function
 function saveInventoryToStorage() {
   const inventory = []
   document.querySelectorAll('.pos-acc-card').forEach((card) => {
-    inventory.push({
-      n: card.querySelector('.pos-acc-name').value || 'New Accessory',
-      p: Number(card.querySelector('.pos-price').value) || 0,
-    })
+    const nameInput = card.querySelector('.pos-acc-name')
+    const priceInput = card.querySelector('.pos-price')
+
+    if (nameInput && priceInput) {
+      inventory.push({
+        n: nameInput.value || 'New Accessory',
+        p: Number(priceInput.value) || 0,
+      })
+    }
   })
   saveInventory(inventory)
 }
@@ -160,7 +191,7 @@ window.addDevice = function () {
     <input type="text" class="d-imei" placeholder="IMEI" oninput="recalc()">
     <input type="number" class="d-qty" value="1" min="1" oninput="recalc()">
     <input type="number" class="d-price" placeholder="Price" oninput="recalc()">
-    <button onclick="this.parentElement.remove(); recalc()" style="background:none; border:none; color:#ef4444; font-size:22px; cursor:pointer;">&times;</button>
+    <button onclick="if(confirm('Remove this device?')){this.parentElement.remove(); recalc()}" style="background:none; border:none; color:#ef4444; font-size:22px; cursor:pointer;">&times;</button>
   `
   deviceArea.appendChild(div)
   recalc()
@@ -168,21 +199,29 @@ window.addDevice = function () {
 
 window.recalc = function () {
   let sub = 0
+
+  // Accessories ගණන් කරන්න
   document.querySelectorAll('.pos-acc-card').forEach((card) => {
     if (card.querySelector('.pos-check')?.checked) {
-      sub +=
-        (Number(card.querySelector('.pos-qty').value) || 0) *
-        (Number(card.querySelector('.pos-price').value) || 0)
+      const qty = Number(card.querySelector('.pos-qty').value) || 0
+      const price = Number(card.querySelector('.pos-price').value) || 0
+      sub += qty * price
     }
   })
+
+  // Devices ගණන් කරන්න
   document.querySelectorAll('.pos-device-row').forEach((row) => {
     const qty = Number(row.querySelector('.d-qty').value) || 0
     const price = Number(row.querySelector('.d-price').value) || 0
     sub += qty * price
   })
-  const discount = Number(document.getElementById('inDiscount').value) || 0
-  document.getElementById('liveTotal').innerText =
-    'Rs. ' + (sub - discount).toLocaleString()
+
+  // Discount එක ගන්න
+  const discount = parseFloat(document.getElementById('inDiscount').value) || 0
+
+  // Total එක display කරන්න
+  const total = sub - discount
+  document.getElementById('liveTotal').innerText = 'Rs. ' + total.toFixed(2)
 }
 
 window.switchTab = function (tab) {
@@ -225,7 +264,7 @@ window.generatePremiumPDF = function () {
     document.getElementById('inName').value || 'Walk-in Customer'
   const customerPhone =
     document.getElementById('inPhone').value || 'Not Provided'
-  const discount = Number(document.getElementById('inDiscount').value) || 0
+  const discount = parseFloat(document.getElementById('inDiscount').value) || 0
 
   // Update PDF elements
   document.getElementById('pdfCustomerName').innerText = customerName
@@ -257,8 +296,8 @@ window.generatePremiumPDF = function () {
       itemsHTML += `<tr>
         <td style="text-align: left;">${name}</td>
         <td style="text-align: center;">${qty}</td>
-        <td style="text-align: right;">Rs. ${price.toLocaleString()}</td>
-        <td style="text-align: right;">Rs. ${total.toLocaleString()}</td>
+        <td style="text-align: right;">Rs. ${price.toFixed(2)}</td>
+        <td style="text-align: right;">Rs. ${total.toFixed(2)}</td>
       </tr>`
     }
   })
@@ -281,25 +320,19 @@ window.generatePremiumPDF = function () {
       itemsHTML += `<tr>
         <td style="text-align: left;">${description}</td>
         <td style="text-align: center;">${qty}</td>
-        <td style="text-align: right;">Rs. ${price.toLocaleString()}</td>
-        <td style="text-align: right;">Rs. ${total.toLocaleString()}</td>
+        <td style="text-align: right;">Rs. ${price.toFixed(2)}</td>
+        <td style="text-align: right;">Rs. ${total.toFixed(2)}</td>
       </tr>`
     }
   })
 
-  // If no items were added
-  if (itemsHTML === '') {
-    alert('No items selected')
-    return
-  }
-
   document.getElementById('pdfItemsBody').innerHTML = itemsHTML
   document.getElementById('pdfSubTotal').innerText =
-    `Rs. ${subtotal.toLocaleString()}`
+    `Rs. ${subtotal.toFixed(2)}`
   document.getElementById('pdfDiscount').innerText =
-    `-Rs. ${discount.toLocaleString()}`
+    `-Rs. ${discount.toFixed(2)}`
   document.getElementById('pdfGrandTotal').innerText =
-    `Rs. ${(subtotal - discount).toLocaleString()}`
+    `Rs. ${(subtotal - discount).toFixed(2)}`
 
   // Save to History
   const history = JSON.parse(
@@ -328,13 +361,11 @@ window.generatePDFWithSettings = function (filename) {
     return
   }
 
-  // Temporarily show the element for PDF generation
   element.style.position = 'static'
   element.style.left = '0'
   element.style.display = 'block'
   element.style.visibility = 'visible'
 
-  // Check if html2pdf is available
   if (typeof html2pdf === 'undefined') {
     console.error('html2pdf library not loaded')
     alert('PDF library not loaded. Please refresh the page.')
@@ -343,7 +374,6 @@ window.generatePDFWithSettings = function (filename) {
     return
   }
 
-  // Configure PDF options for better formatting
   const opt = {
     margin: [0.5, 0.5, 0.5, 0.5],
     filename: `TM_${filename}.pdf`,
@@ -363,13 +393,11 @@ window.generatePDFWithSettings = function (filename) {
     pagebreak: { mode: ['css', 'legacy'] },
   }
 
-  // Generate PDF
   html2pdf()
     .set(opt)
     .from(element)
     .save()
     .then(() => {
-      // Hide element after PDF generation
       element.style.position = 'absolute'
       element.style.left = '-9999px'
       element.style.visibility = 'hidden'
@@ -383,12 +411,18 @@ window.generatePDFWithSettings = function (filename) {
     })
 }
 
-// Fixed clearHistory function
 window.clearHistory = function () {
   if (confirm('Clear all history? This action cannot be undone.')) {
     localStorage.setItem(STORAGE_KEYS.INVOICE_HISTORY, '[]')
     if (typeof displayHistory === 'function') displayHistory()
   }
+}
+
+// Debugging function
+window.checkInventory = function () {
+  const saved = localStorage.getItem(STORAGE_KEYS.INVENTORY)
+  console.log('Current inventory:', saved ? JSON.parse(saved) : 'None')
+  alert('Check console for inventory data (F12)')
 }
 
 window.onload = () => {
