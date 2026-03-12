@@ -190,6 +190,67 @@
             </div>
           </div>
 
+          <!-- Terms & Conditions Management -->
+          <div
+            style="
+              margin: 20px 0;
+              padding: 20px;
+              background: white;
+              border-radius: 24px;
+              box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            "
+          >
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 15px;
+                flex-wrap: wrap;
+                gap: 10px;
+              "
+            >
+              <h3
+                style="
+                  font-size: 18px;
+                  font-weight: 700;
+                  color: var(--dark);
+                  display: flex;
+                  align-items: center;
+                  gap: 10px;
+                "
+              >
+                <i
+                  class="fas fa-file-contract"
+                  style="color: var(--primary)"
+                ></i>
+                Terms & Conditions
+              </h3>
+              <button
+                onclick="addNewTerm()"
+                class="add-term-btn"
+                style="
+                  padding: 10px 20px;
+                  background: var(--primary-light);
+                  color: var(--primary);
+                  border: none;
+                  border-radius: 30px;
+                  font-weight: 600;
+                  cursor: pointer;
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                "
+              >
+                <i class="fas fa-plus"></i> Add New Term
+              </button>
+            </div>
+            <div
+              id="termsContainer"
+              style="display: flex; flex-direction: column; gap: 10px"
+            ></div>
+          </div>
+
           <div class="pos-bottom-bar">
             <div>
               <div class="pos-total-label">TOTAL PAYABLE</div>
@@ -319,19 +380,8 @@
               </div>
               <div class="pdf-terms">
                 <h4>Terms & Conditions</h4>
-                <ul>
-                  <li>
-                    <i class="fas fa-check-circle"></i> Genuine products with 1
-                    year warranty
-                  </li>
-                  <li>
-                    <i class="fas fa-check-circle"></i> Physical damage not
-                    covered
-                  </li>
-                  <li>
-                    <i class="fas fa-check-circle"></i> Warranty valid with
-                    original invoice
-                  </li>
+                <ul id="pdfTermsList">
+                  <!-- Terms will be inserted here -->
                 </ul>
               </div>
             </div>

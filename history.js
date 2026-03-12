@@ -46,7 +46,6 @@ window.viewInvoice = function (index) {
       return
     }
 
-    // Check if elements exist
     const elements = [
       'pdfCustomerName',
       'pdfCustomerPhone',
@@ -56,6 +55,7 @@ window.viewInvoice = function (index) {
       'pdfSubTotal',
       'pdfDiscount',
       'pdfGrandTotal',
+      'pdfTermsList',
     ]
 
     for (const elId of elements) {
@@ -85,6 +85,25 @@ window.viewInvoice = function (index) {
       `-Rs. ${(inv.discount || 0).toFixed(2)}`
     document.getElementById('pdfGrandTotal').innerText =
       `Rs. ${(inv.total || 0).toFixed(2)}`
+
+    // Load terms from localStorage for history view
+    const terms = JSON.parse(localStorage.getItem('techno_terms') || '[]')
+    const selectedTerms = terms.filter((t) => t.selected)
+    const pdfTermsList = document.getElementById('pdfTermsList')
+    if (pdfTermsList) {
+      if (selectedTerms.length === 0) {
+        pdfTermsList.innerHTML =
+          '<li style="color: #64748b;"><i class="fas fa-info-circle"></i> No terms selected</li>'
+      } else {
+        pdfTermsList.innerHTML = selectedTerms
+          .map(
+            (term) => `
+          <li><i class="fas fa-check-circle" style="color: #10b981;"></i> ${term.text}</li>
+        `,
+          )
+          .join('')
+      }
+    }
 
     setTimeout(() => {
       generatePDFWithSettings(inv.invoiceNo || 'invoice')

@@ -4,6 +4,7 @@ const STORAGE_KEYS = {
   INVOICE_HISTORY: 'techno_invoice_history',
   INVENTORY: 'techno_inventory',
   USER: 'techno_user',
+  TERMS: 'techno_terms',
 }
 
 const defaultInventory = [
@@ -15,11 +16,26 @@ const defaultInventory = [
   { n: 'Power Bank 20,000mAh', p: 8900 },
 ]
 
-// පළමු වතාවට default inventory එක save කරන්න
+const defaultTerms = [
+  {
+    id: 'term1',
+    text: 'Genuine products with 2 year warranty',
+    selected: true,
+  },
+  { id: 'term2', text: 'Physical damage not covered', selected: true },
+  { id: 'term3', text: 'Warranty valid with original invoice', selected: true },
+]
+
+// Initialize default data
 if (!localStorage.getItem(STORAGE_KEYS.INVENTORY)) {
   localStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(defaultInventory))
 }
 
+if (!localStorage.getItem(STORAGE_KEYS.TERMS)) {
+  localStorage.setItem(STORAGE_KEYS.TERMS, JSON.stringify(defaultTerms))
+}
+
+// Load Inventory
 function loadInventory() {
   const saved = localStorage.getItem(STORAGE_KEYS.INVENTORY)
   if (saved) {
@@ -32,9 +48,126 @@ function loadInventory() {
   return defaultInventory
 }
 
+// Save Inventory
 function saveInventory(inventory) {
   localStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(inventory))
-  console.log('Inventory saved:', inventory) // Debugging
+}
+
+// Load Terms
+function loadTerms() {
+  const saved = localStorage.getItem(STORAGE_KEYS.TERMS)
+  if (saved) {
+    try {
+      return JSON.parse(saved)
+    } catch (e) {
+      return defaultTerms
+    }
+  }
+  return defaultTerms
+}
+
+// Save Terms
+function saveTerms(terms) {
+  localStorage.setItem(STORAGE_KEYS.TERMS, JSON.stringify(terms))
+}
+
+// Display Terms in POS
+function displayTerms() {
+  const container = document.getElementById('termsContainer')
+  if (!container) return
+
+  const terms = loadTerms()
+
+  if (terms.length === 0) {
+    container.innerHTML =
+      '<p style="text-align: center; padding: 20px; color: var(--gray);">No terms added. Click "Add New Term" to create one.</p>'
+    return
+  }
+
+  container.innerHTML = terms
+    .map(
+      (term) => `
+    <div class="term-item" style="display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--light); border-radius: 12px; border: 1px solid var(--border); margin-bottom: 8px;">
+      <input type="checkbox" 
+        ${term.selected ? 'checked' : ''} 
+        onchange="toggleTerm('${term.id}')"
+        style="width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer;"
+      >
+      <input type="text" 
+        value="${term.text.replace(/"/g, '&quot;')}" 
+        onchange="updateTermText('${term.id}', this.value)"
+        style="flex: 1; padding: 8px 12px; border: 2px solid var(--border); border-radius: 8px; font-size: 14px; font-family: 'Inter', sans-serif;"
+      >
+      <button onclick="deleteTerm('${term.id}')" 
+        style="background: none; border: none; color: var(--danger); font-size: 18px; cursor: pointer; padding: 5px;">
+        <i class="fas fa-trash"></i>
+      </button>
+    </div>
+  `,
+    )
+    .join('')
+}
+
+// Add New Term
+window.addNewTerm = function () {
+  const terms = loadTerms()
+  const newId =
+    'term_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+  terms.push({
+    id: newId,
+    text: 'New term and condition',
+    selected: true,
+  })
+  saveTerms(terms)
+  displayTerms()
+}
+
+// Toggle Term Selection
+window.toggleTerm = function (termId) {
+  const terms = loadTerms()
+  const term = terms.find((t) => t.id === termId)
+  if (term) {
+    term.selected = !term.selected
+    saveTerms(terms)
+  }
+}
+
+// Update Term Text
+window.updateTermText = function (termId, newText) {
+  const terms = loadTerms()
+  const term = terms.find((t) => t.id === termId)
+  if (term) {
+    term.text = newText
+    saveTerms(terms)
+  }
+}
+
+// Delete Term
+window.deleteTerm = function (termId) {
+  if (confirm('Delete this term?')) {
+    const terms = loadTerms()
+    const filtered = terms.filter((t) => t.id !== termId)
+    saveTerms(filtered)
+    displayTerms()
+  }
+}
+
+// Get Selected Terms for PDF
+function getSelectedTermsHTML() {
+  const terms = loadTerms()
+  const selected = terms.filter((t) => t.selected)
+
+  if (selected.length === 0) {
+    return '<li style="color: #64748b;"><i class="fas fa-info-circle"></i> No terms selected</li>'
+  }
+
+  return selected
+    .map(
+      (term) => `
+    <li><i class="fas fa-check-circle" style="color: #10b981;"></i> ${term.text}</li>
+  `,
+    )
+    .join('')
 }
 
 // Phone number validation
@@ -48,29 +181,19 @@ window.applyDiscount = function () {
   const discountInput = document.getElementById('inDiscount')
   let discount = parseFloat(discountInput.value) || 0
 
-  // Get total - නිවැරදිව parse කරන්න
   const totalText = document.getElementById('liveTotal').innerText
-
-  // "Rs. 499.50" වගේ text එකකින් number එක ගන්න
   let totalNumber = totalText.replace('Rs.', '').trim()
-
-  // Comma තිබුනොත් ඉවත් කරන්න
   totalNumber = totalNumber.replace(/,/g, '')
-
-  // Float එකට convert කරන්න
   const total = parseFloat(totalNumber) || 0
 
-  // Validate
   if (discount < 0) discount = 0
   if (discount > total) discount = total
 
-  // Update
   discountInput.value = discount
-
-  // Recalculate
   recalc()
 }
 
+// Login function
 window.login = function () {
   const username = document.getElementById('username').value
   const password = document.getElementById('password').value
@@ -84,6 +207,7 @@ window.login = function () {
   }
 }
 
+// Logout function
 window.logout = function () {
   document.getElementById('loginPage').style.display = 'block'
   document.getElementById('posSystem').style.display = 'none'
@@ -91,7 +215,7 @@ window.logout = function () {
   document.getElementById('password').value = ''
 }
 
-// FIXED initializePOS function - saved inventory එක පෙන්වන්න
+// Initialize POS
 function initializePOS() {
   const accGrid = document.getElementById('accGrid')
   if (accGrid) accGrid.innerHTML = ''
@@ -99,11 +223,8 @@ function initializePOS() {
   const deviceArea = document.getElementById('deviceArea')
   if (deviceArea) deviceArea.innerHTML = ''
 
-  // Saved inventory එක load කරන්න
   const savedInventory = loadInventory()
-  console.log('Loading inventory:', savedInventory) // Debugging
 
-  // Accessories display කරන්න
   if (accGrid) {
     savedInventory.forEach((item) => addAcc(item.n, item.p, false))
   }
@@ -122,17 +243,20 @@ function initializePOS() {
 
   document.getElementById('inNo').value = generateInvoiceNumber()
   document.getElementById('inDiscount').value = 0
+
+  displayTerms()
   recalc()
 
   if (typeof displayHistory === 'function') displayHistory()
 }
 
+// Generate Invoice Number
 function generateInvoiceNumber() {
   const now = new Date()
   return `INV-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${Math.floor(Math.random() * 900 + 100)}`
 }
 
-// FIXED addAcc function - name/price edit කරද්දී save වෙන්න
+// Add Accessory
 window.addAcc = function (n = 'New Accessory', p = 0, shouldSave = true) {
   const accGrid = document.getElementById('accGrid')
   if (!accGrid) return
@@ -151,20 +275,21 @@ window.addAcc = function (n = 'New Accessory', p = 0, shouldSave = true) {
   `
   accGrid.appendChild(div)
   if (shouldSave) {
-    saveInventoryToStorage() // අලුත් එකක් add කරද්දී save වෙන්න
+    saveInventoryToStorage()
   }
   recalc()
 }
 
+// Delete Accessory
 window.deleteAccessory = function (button) {
   if (confirm('Delete this accessory?')) {
     button.closest('.pos-acc-card').remove()
     recalc()
-    saveInventoryToStorage() // delete කරද්දී save වෙන්න
+    saveInventoryToStorage()
   }
 }
 
-// FIXED saveInventoryToStorage function
+// Save Inventory to Storage
 function saveInventoryToStorage() {
   const inventory = []
   document.querySelectorAll('.pos-acc-card').forEach((card) => {
@@ -181,6 +306,7 @@ function saveInventoryToStorage() {
   saveInventory(inventory)
 }
 
+// Add Device
 window.addDevice = function () {
   const deviceArea = document.getElementById('deviceArea')
   const div = document.createElement('div')
@@ -197,10 +323,10 @@ window.addDevice = function () {
   recalc()
 }
 
+// Recalculate Total
 window.recalc = function () {
   let sub = 0
 
-  // Accessories ගණන් කරන්න
   document.querySelectorAll('.pos-acc-card').forEach((card) => {
     if (card.querySelector('.pos-check')?.checked) {
       const qty = Number(card.querySelector('.pos-qty').value) || 0
@@ -209,21 +335,18 @@ window.recalc = function () {
     }
   })
 
-  // Devices ගණන් කරන්න
   document.querySelectorAll('.pos-device-row').forEach((row) => {
     const qty = Number(row.querySelector('.d-qty').value) || 0
     const price = Number(row.querySelector('.d-price').value) || 0
     sub += qty * price
   })
 
-  // Discount එක ගන්න
   const discount = parseFloat(document.getElementById('inDiscount').value) || 0
-
-  // Total එක display කරන්න
   const total = sub - discount
   document.getElementById('liveTotal').innerText = 'Rs. ' + total.toFixed(2)
 }
 
+// Switch Tab
 window.switchTab = function (tab) {
   const posTab = document.getElementById('posTab')
   const historyTab = document.getElementById('historyTab')
@@ -242,8 +365,8 @@ window.switchTab = function (tab) {
   }
 }
 
+// Generate PDF
 window.generatePremiumPDF = function () {
-  // Check if there are any items
   const hasAccessories =
     document.querySelectorAll('.pos-acc-card .pos-check:checked').length > 0
   const hasDevices = Array.from(
@@ -266,12 +389,10 @@ window.generatePremiumPDF = function () {
     document.getElementById('inPhone').value || 'Not Provided'
   const discount = parseFloat(document.getElementById('inDiscount').value) || 0
 
-  // Update PDF elements
   document.getElementById('pdfCustomerName').innerText = customerName
   document.getElementById('pdfCustomerPhone').innerText = customerPhone
   document.getElementById('pdfInvoiceDisplay').innerText = invoiceNo
 
-  // Better date format
   const today = new Date()
   const formattedDate = today.toLocaleDateString('en-US', {
     year: 'numeric',
@@ -280,11 +401,9 @@ window.generatePremiumPDF = function () {
   })
   document.getElementById('pdfDateDisplay').innerText = formattedDate
 
-  // Build items table
   let itemsHTML = ''
   let subtotal = 0
 
-  // Add accessories
   document.querySelectorAll('.pos-acc-card').forEach((card) => {
     if (card.querySelector('.pos-check').checked) {
       const name = card.querySelector('.pos-acc-name').value || 'Accessory'
@@ -302,7 +421,6 @@ window.generatePremiumPDF = function () {
     }
   })
 
-  // Add devices
   document.querySelectorAll('.pos-device-row').forEach((row) => {
     const name = row.querySelector('.d-name').value
     if (name && name.trim() !== '') {
@@ -310,6 +428,9 @@ window.generatePremiumPDF = function () {
       const imei = row.querySelector('.d-imei').value
       const qty = Number(row.querySelector('.d-qty').value) || 1
       const price = Number(row.querySelector('.d-price').value) || 0
+
+      if (price === 0) return
+
       const total = qty * price
       subtotal += total
 
@@ -326,6 +447,11 @@ window.generatePremiumPDF = function () {
     }
   })
 
+  if (itemsHTML === '') {
+    alert('No valid items selected')
+    return
+  }
+
   document.getElementById('pdfItemsBody').innerHTML = itemsHTML
   document.getElementById('pdfSubTotal').innerText =
     `Rs. ${subtotal.toFixed(2)}`
@@ -334,7 +460,11 @@ window.generatePremiumPDF = function () {
   document.getElementById('pdfGrandTotal').innerText =
     `Rs. ${(subtotal - discount).toFixed(2)}`
 
-  // Save to History
+  const pdfTermsList = document.getElementById('pdfTermsList')
+  if (pdfTermsList) {
+    pdfTermsList.innerHTML = getSelectedTermsHTML()
+  }
+
   const history = JSON.parse(
     localStorage.getItem(STORAGE_KEYS.INVOICE_HISTORY) || '[]',
   )
@@ -350,10 +480,10 @@ window.generatePremiumPDF = function () {
   })
   localStorage.setItem(STORAGE_KEYS.INVOICE_HISTORY, JSON.stringify(history))
 
-  // Generate PDF
   generatePDFWithSettings(invoiceNo)
 }
 
+// Generate PDF with Settings
 window.generatePDFWithSettings = function (filename) {
   const element = document.getElementById('invoice-premium')
   if (!element) {
@@ -365,6 +495,7 @@ window.generatePDFWithSettings = function (filename) {
   element.style.left = '0'
   element.style.display = 'block'
   element.style.visibility = 'visible'
+  element.style.background = 'white'
 
   if (typeof html2pdf === 'undefined') {
     console.error('html2pdf library not loaded')
@@ -375,22 +506,33 @@ window.generatePDFWithSettings = function (filename) {
   }
 
   const opt = {
-    margin: [0.5, 0.5, 0.5, 0.5],
+    margin: [0.3, 0.3, 0.3, 0.3],
     filename: `TM_${filename}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
+    image: {
+      type: 'jpeg',
+      quality: 0.95,
+    },
     html2canvas: {
       scale: 2,
       letterRendering: true,
       useCORS: true,
       logging: false,
+      allowTaint: false,
+      backgroundColor: '#ffffff',
     },
     jsPDF: {
       unit: 'mm',
       format: 'a4',
       orientation: 'portrait',
       compress: true,
+      precision: 16,
     },
-    pagebreak: { mode: ['css', 'legacy'] },
+    pagebreak: {
+      mode: ['css', 'legacy'],
+      before: '.page-break',
+      after: '.page-break',
+      avoid: 'tr',
+    },
   }
 
   html2pdf()
@@ -411,6 +553,7 @@ window.generatePDFWithSettings = function (filename) {
     })
 }
 
+// Clear History
 window.clearHistory = function () {
   if (confirm('Clear all history? This action cannot be undone.')) {
     localStorage.setItem(STORAGE_KEYS.INVOICE_HISTORY, '[]')
@@ -418,12 +561,18 @@ window.clearHistory = function () {
   }
 }
 
-// Debugging function
-window.checkInventory = function () {
-  const saved = localStorage.getItem(STORAGE_KEYS.INVENTORY)
-  console.log('Current inventory:', saved ? JSON.parse(saved) : 'None')
-  alert('Check console for inventory data (F12)')
-}
+// Enter key support for discount
+document.addEventListener('DOMContentLoaded', function () {
+  const discountInput = document.getElementById('inDiscount')
+  if (discountInput) {
+    discountInput.addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        applyDiscount()
+      }
+    })
+  }
+})
 
 window.onload = () => {
   document.getElementById('loginPage').style.display = 'block'
