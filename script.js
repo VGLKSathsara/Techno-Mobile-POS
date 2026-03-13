@@ -365,13 +365,28 @@ window.switchTab = function (tab) {
   }
 }
 
-// ========== PDF TEMPLATE UPDATE FUNCTION ==========
-function updatePDFTemplate() {
+// Generate PDF
+window.generatePremiumPDF = function () {
+  const hasAccessories =
+    document.querySelectorAll('.pos-acc-card .pos-check:checked').length > 0
+  const hasDevices = Array.from(
+    document.querySelectorAll('.pos-device-row'),
+  ).some(
+    (row) =>
+      row.querySelector('.d-name') &&
+      row.querySelector('.d-name').value.trim() !== '',
+  )
+
+  if (!hasAccessories && !hasDevices) {
+    alert('Please add at least one item to generate invoice')
+    return
+  }
+
+  const invoiceNo = document.getElementById('inNo').value
   const customerName =
     document.getElementById('inName').value || 'Walk-in Customer'
   const customerPhone =
     document.getElementById('inPhone').value || 'Not Provided'
-  const invoiceNo = document.getElementById('inNo').value
   const discount = parseFloat(document.getElementById('inDiscount').value) || 0
 
   document.getElementById('pdfCustomerName').innerText = customerName
@@ -432,6 +447,11 @@ function updatePDFTemplate() {
     }
   })
 
+  if (itemsHTML === '') {
+    alert('No valid items selected')
+    return
+  }
+
   document.getElementById('pdfItemsBody').innerHTML = itemsHTML
   document.getElementById('pdfSubTotal').innerText =
     `Rs. ${subtotal.toFixed(2)}`
@@ -445,44 +465,6 @@ function updatePDFTemplate() {
     pdfTermsList.innerHTML = getSelectedTermsHTML()
   }
 
-  return subtotal
-}
-
-// ========== PRINT FUNCTION ==========
-window.printInvoice = function () {
-  const hasAccessories =
-    document.querySelectorAll('.pos-acc-card .pos-check:checked').length > 0
-  const hasDevices = Array.from(
-    document.querySelectorAll('.pos-device-row'),
-  ).some(
-    (row) =>
-      row.querySelector('.d-name') &&
-      row.querySelector('.d-name').value.trim() !== '',
-  )
-
-  if (!hasAccessories && !hasDevices) {
-    alert('Please add at least one item to print invoice')
-    return
-  }
-
-  // Update PDF template with current data
-  const subtotal = updatePDFTemplate()
-
-  // Save to History before printing
-  const invoiceNo = document.getElementById('inNo').value
-  const customerName =
-    document.getElementById('inName').value || 'Walk-in Customer'
-  const customerPhone =
-    document.getElementById('inPhone').value || 'Not Provided'
-  const discount = parseFloat(document.getElementById('inDiscount').value) || 0
-
-  const today = new Date()
-  const formattedDate = today.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
-
   const history = JSON.parse(
     localStorage.getItem(STORAGE_KEYS.INVOICE_HISTORY) || '[]',
   )
@@ -492,140 +474,12 @@ window.printInvoice = function () {
     phone: customerPhone,
     date: formattedDate,
     total: subtotal - discount,
-    itemsHTML: document.getElementById('pdfItemsBody').innerHTML,
+    itemsHTML,
     subtotal,
     discount,
   })
   localStorage.setItem(STORAGE_KEYS.INVOICE_HISTORY, JSON.stringify(history))
 
-  // Get the invoice element
-  const invoiceElement = document.getElementById('invoice-premium')
-
-  // Create print-specific styles
-  const printStyles = `
-    <style>
-      @media print {
-        body {
-          margin: 0;
-          padding: 10mm;
-          background: white;
-        }
-        #invoice-premium {
-          display: block !important;
-          position: relative !important;
-          left: 0 !important;
-          top: 0 !important;
-          visibility: visible !important;
-          width: 100%;
-          box-shadow: none;
-        }
-        .invoice-pdf {
-          padding: 0;
-        }
-        .invoice-card {
-          box-shadow: none;
-          border: 1px solid #e2e8f0;
-        }
-        .pdf-header {
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-        }
-        @page {
-          size: A4;
-          margin: 0.5in;
-        }
-      }
-    </style>
-  `
-
-  // Open print dialog in new window
-  const printWindow = window.open('', '_blank')
-  printWindow.document.write(`
-    <html>
-      <head>
-        <title>Print Invoice - ${invoiceNo}</title>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-        <style>
-          body {
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            padding: 20px;
-            background: white;
-          }
-          ${document.querySelector('style').innerHTML}
-        </style>
-        ${printStyles}
-      </head>
-      <body>
-        ${invoiceElement.outerHTML}
-        <script>
-          window.onload = function() {
-            setTimeout(function() {
-              window.print();
-              window.onafterprint = function() {
-                window.close();
-              }
-            }, 500);
-          }
-        <\/script>
-      </body>
-    </html>
-  `)
-  printWindow.document.close()
-}
-
-// ========== PDF GENERATION FUNCTION ==========
-window.generatePremiumPDF = function () {
-  const hasAccessories =
-    document.querySelectorAll('.pos-acc-card .pos-check:checked').length > 0
-  const hasDevices = Array.from(
-    document.querySelectorAll('.pos-device-row'),
-  ).some(
-    (row) =>
-      row.querySelector('.d-name') &&
-      row.querySelector('.d-name').value.trim() !== '',
-  )
-
-  if (!hasAccessories && !hasDevices) {
-    alert('Please add at least one item to generate invoice')
-    return
-  }
-
-  const invoiceNo = document.getElementById('inNo').value
-  const customerName =
-    document.getElementById('inName').value || 'Walk-in Customer'
-  const customerPhone =
-    document.getElementById('inPhone').value || 'Not Provided'
-  const discount = parseFloat(document.getElementById('inDiscount').value) || 0
-
-  // Update PDF template
-  const subtotal = updatePDFTemplate()
-
-  // Save to History
-  const today = new Date()
-  const formattedDate = today.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
-
-  const history = JSON.parse(
-    localStorage.getItem(STORAGE_KEYS.INVOICE_HISTORY) || '[]',
-  )
-  history.unshift({
-    invoiceNo,
-    customerName,
-    phone: customerPhone,
-    date: formattedDate,
-    total: subtotal - discount,
-    itemsHTML: document.getElementById('pdfItemsBody').innerHTML,
-    subtotal,
-    discount,
-  })
-  localStorage.setItem(STORAGE_KEYS.INVOICE_HISTORY, JSON.stringify(history))
-
-  // Generate PDF
   generatePDFWithSettings(invoiceNo)
 }
 

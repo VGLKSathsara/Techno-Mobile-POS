@@ -105,94 +105,13 @@ window.viewInvoice = function (index) {
       }
     }
 
-    // Show print popup for history view
     setTimeout(() => {
-      printInvoiceFromHistory(inv.invoiceNo || 'invoice')
+      generatePDFWithSettings(inv.invoiceNo || 'invoice')
     }, 500)
   } catch (error) {
     console.error('Error viewing invoice:', error)
     alert('Error loading invoice')
   }
-}
-
-// Print from history
-window.printInvoiceFromHistory = function (filename) {
-  const element = document.getElementById('invoice-premium')
-  if (!element) {
-    console.error('PDF element not found')
-    return
-  }
-
-  const printStyles = `
-    <style>
-      @media print {
-        body {
-          margin: 0;
-          padding: 10mm;
-          background: white;
-        }
-        #invoice-premium {
-          display: block !important;
-          position: relative !important;
-          left: 0 !important;
-          top: 0 !important;
-          visibility: visible !important;
-          width: 100%;
-          box-shadow: none;
-        }
-        .invoice-pdf {
-          padding: 0;
-        }
-        .invoice-card {
-          box-shadow: none;
-          border: 1px solid #e2e8f0;
-        }
-        .pdf-header {
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-        }
-        @page {
-          size: A4;
-          margin: 0.5in;
-        }
-      }
-    </style>
-  `
-
-  const printWindow = window.open('', '_blank')
-  printWindow.document.write(`
-    <html>
-      <head>
-        <title>Print Invoice - ${filename}</title>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-        <style>
-          body {
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            padding: 20px;
-            background: white;
-          }
-          ${document.querySelector('style').innerHTML}
-        </style>
-        ${printStyles}
-      </head>
-      <body>
-        ${element.outerHTML}
-        <script>
-          window.onload = function() {
-            setTimeout(function() {
-              window.print();
-              window.onafterprint = function() {
-                window.close();
-              }
-            }, 500);
-          }
-        <\/script>
-      </body>
-    </html>
-  `)
-  printWindow.document.close()
 }
 
 window.deleteFromHistory = function (index) {
