@@ -1,6 +1,6 @@
 # Techno Mobile POS System
 
-A premium Point of Sale (POS) system for Techno Mobile, designed for retail and repair services.
+A premium Point of Sale (POS) system for Techno Mobile, designed for retail and repair services..
 
 ## Features
 
