@@ -4,308 +4,301 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Techno Mobile | Premium POS System</title>
-
-    <!-- Fonts & Icons -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&family=Space+Mono:wght@400;700&display=swap"
       rel="stylesheet"
     />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
     />
-
-    <!-- CSS -->
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <!-- ==================== LOGIN PAGE ==================== -->
+    <!-- LOGIN PAGE -->
     <div id="loginPage" class="login-container">
-      <div class="login-icon">TM</div>
-      <h2>Welcome Back!</h2>
-      <p class="login-subtitle">Login to Techno Mobile POS</p>
-
-      <div class="login-input-group">
-        <label>Username</label>
-        <input
-          type="text"
-          id="username"
-          placeholder="Enter username"
-          autocomplete="off"
-        />
+      <div class="login-bg-shapes">
+        <div class="shape s1"></div>
+        <div class="shape s2"></div>
+        <div class="shape s3"></div>
       </div>
-
-      <div class="login-input-group">
-        <label>Password</label>
-        <input
-          type="password"
-          id="password"
-          placeholder="Enter password"
-          autocomplete="off"
-        />
-      </div>
-
-      <button class="login-btn" onclick="login()">
-        <i class="fas fa-sign-in-alt" style="margin-right: 8px"></i>
-        Login to Dashboard
-      </button>
-
-      <div
-        class="login-footer"
-        style="color: var(--gray); font-size: 13px; margin-top: 20px"
-      >
-        Billing System
+      <div class="login-card">
+        <div class="login-icon">TM</div>
+        <h2>Welcome Back</h2>
+        <p class="login-subtitle">Sign in to Techno Mobile POS</p>
+        <div class="login-input-group">
+          <label><i class="fas fa-user"></i> Username</label>
+          <input
+            type="text"
+            id="username"
+            placeholder="Enter username"
+            autocomplete="off"
+            onkeydown="if (event.key === 'Enter') login()"
+          />
+        </div>
+        <div class="login-input-group">
+          <label><i class="fas fa-lock"></i> Password</label>
+          <div class="pw-wrap">
+            <input
+              type="password"
+              id="password"
+              placeholder="Enter password"
+              autocomplete="off"
+              onkeydown="if (event.key === 'Enter') login()"
+            />
+            <button class="pw-toggle" onclick="togglePassword()" tabindex="-1">
+              <i class="fas fa-eye" id="pwEyeIcon"></i>
+            </button>
+          </div>
+        </div>
+        <div id="loginError" class="login-error" style="display: none">
+          <i class="fas fa-exclamation-circle"></i> Invalid username or password
+        </div>
+        <button class="login-btn" onclick="login()">
+          <i class="fas fa-sign-in-alt"></i> Login to Dashboard
+        </button>
+        <div class="login-footer">
+          Techno Mobile &copy; 2026 &mdash; Billing System
+        </div>
       </div>
     </div>
 
-    <!-- ==================== MAIN POS SYSTEM ==================== -->
+    <!-- MAIN POS SYSTEM -->
     <div id="posSystem" class="pos-wrapper">
-      <!-- Navigation -->
-      <div class="pos-nav">
-        <div class="nav-brand">
+      <!-- Sidebar -->
+      <div class="pos-sidebar">
+        <div class="sidebar-brand">
           <div class="brand-icon">TM</div>
           <div class="brand-text">
             <h2>Techno Mobile</h2>
             <p>POS Pro System</p>
           </div>
         </div>
-
-        <div class="nav-menu">
-          <div class="nav-item active" onclick="switchTab('pos')">
-            <i class="fas fa-shopping-cart"></i>
-            POS
+        <nav class="sidebar-nav">
+          <div class="nav-item active" onclick="switchTab('pos')" id="navPos">
+            <i class="fas fa-cash-register"></i><span>Point of Sale</span>
           </div>
-          <div class="nav-item" onclick="switchTab('history')">
-            <i class="fas fa-history"></i>
-            History
+          <div class="nav-item" onclick="switchTab('history')" id="navHistory">
+            <i class="fas fa-receipt"></i><span>Invoice History</span>
           </div>
-        </div>
-
-        <div class="user-info">
+          <div
+            class="nav-item"
+            onclick="switchTab('inventory')"
+            id="navInventory"
+          >
+            <i class="fas fa-boxes"></i><span>Inventory</span>
+          </div>
+        </nav>
+        <div class="sidebar-footer">
           <div class="user-badge">
-            <i class="fas fa-user-circle"></i>
-            <span id="loggedUser"></span>
+            <i class="fas fa-user-circle"></i><span id="loggedUser"></span>
           </div>
-          <button class="logout-btn" onclick="logout()">
+          <button class="logout-btn" onclick="logout()" title="Logout">
             <i class="fas fa-sign-out-alt"></i>
           </button>
         </div>
       </div>
 
       <!-- Main Content -->
-      <div class="pos-content">
-        <!-- ==================== POS TAB ==================== -->
-        <div id="posTab">
-          <div class="pos-header">
+      <div class="pos-main">
+        <!-- POS TAB -->
+        <div id="posTab" class="tab-panel">
+          <div class="page-header">
             <div>
-              <h1>Point of Sale</h1>
-              <p>Create new invoice</p>
+              <h1>New Invoice</h1>
+              <p>Create a new invoice for your customer</p>
             </div>
-            <div class="pos-invoice-meta">
-              <input type="text" id="inNo" readonly />
-              <p id="liveDate"></p>
-            </div>
-          </div>
-
-          <div class="pos-input-grid">
-            <div class="pos-input-group">
-              <span class="pos-label">Customer Name</span>
-              <input
-                type="text"
-                id="inName"
-                placeholder="Client Full Name"
-                class="pos-input"
-              />
-            </div>
-            <div class="pos-input-group">
-              <span class="pos-label">Contact No</span>
-              <input
-                type="text"
-                id="inPhone"
-                placeholder="07x xxxxxxx"
-                class="pos-input"
-                oninput="validatePhone(this)"
-                maxlength="10"
-              />
-            </div>
-            <div class="pos-input-group">
-              <span class="pos-label">Date</span>
-              <input type="date" id="inDate" class="pos-input" />
+            <div class="invoice-badge">
+              <span class="inv-label">INVOICE</span>
+              <span class="inv-no mono" id="inNo">—</span>
+              <span class="inv-date" id="liveDate"></span>
             </div>
           </div>
 
-          <div class="pos-section-title">
-            <span>Premium Accessories</span>
-            <span onclick="addAcc()"><i class="fas fa-plus"></i> Add New</span>
-          </div>
-
-          <div class="pos-acc-grid" id="accGrid"></div>
-
-          <div class="pos-section-title">
-            <span>Devices & Custom Items</span>
-          </div>
-          <div id="deviceArea"></div>
-          <button class="pos-btn-add" onclick="addDevice()">
-            <i class="fas fa-plus" style="margin-right: 8px"></i>
-            Add Another Device
-          </button>
-
-          <div class="pos-discount-card">
-            <div>
-              <h4>Billing Adjustments</h4>
-              <p>Apply manual discounts to total bill</p>
+          <div class="card">
+            <div class="card-title">
+              <i class="fas fa-user-tag"></i> Customer Details
             </div>
-            <div class="pos-discount-input">
-              <span class="pos-label">Discount (Rs.)</span>
-              <div style="display: flex; gap: 10px">
+            <div class="pos-input-grid">
+              <div class="pos-input-group">
+                <span class="pos-label">Customer Name</span>
                 <input
-                  type="number"
-                  id="inDiscount"
-                  value="0"
-                  min="0"
-                  step="1"
-                  style="
-                    flex: 1;
-                    padding: 14px 18px;
-                    border-radius: 14px;
-                    border: 2px solid var(--border);
-                    font-family: 'Inter', sans-serif;
-                  "
+                  type="text"
+                  id="inName"
+                  placeholder="Full name or Walk-in"
+                  class="pos-input"
                 />
-                <button
-                  onclick="applyDiscount()"
-                  style="
-                    padding: 14px 20px;
-                    background: var(--primary);
-                    color: white;
-                    border: none;
-                    border-radius: 14px;
-                    font-weight: 600;
-                    cursor: pointer;
-                  "
-                >
-                  Apply
-                </button>
+              </div>
+              <div class="pos-input-group">
+                <span class="pos-label">Contact No.</span>
+                <input
+                  type="text"
+                  id="inPhone"
+                  placeholder="07x xxxxxxx"
+                  class="pos-input"
+                  oninput="validatePhone(this)"
+                  maxlength="10"
+                />
+              </div>
+              <div class="pos-input-group">
+                <span class="pos-label">Invoice Date</span>
+                <input type="date" id="inDate" class="pos-input" />
               </div>
             </div>
           </div>
 
-          <!-- Terms & Conditions Management -->
-          <div
-            style="
-              margin: 20px 0;
-              padding: 20px;
-              background: white;
-              border-radius: 24px;
-              box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            "
-          >
-            <div
-              style="
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 15px;
-                flex-wrap: wrap;
-                gap: 10px;
-              "
-            >
-              <h3
-                style="
-                  font-size: 18px;
-                  font-weight: 700;
-                  color: var(--dark);
-                  display: flex;
-                  align-items: center;
-                  gap: 10px;
-                "
-              >
-                <i
-                  class="fas fa-file-contract"
-                  style="color: var(--primary)"
-                ></i>
-                Terms & Conditions
-              </h3>
-              <button
-                onclick="addNewTerm()"
-                class="add-term-btn"
-                style="
-                  padding: 10px 20px;
-                  background: var(--primary-light);
-                  color: var(--primary);
-                  border: none;
-                  border-radius: 30px;
-                  font-weight: 600;
-                  cursor: pointer;
-                  display: flex;
-                  align-items: center;
-                  gap: 8px;
-                "
-              >
-                <i class="fas fa-plus"></i> Add New Term
+          <div class="card">
+            <div class="card-title-row">
+              <div class="card-title">
+                <i class="fas fa-plug"></i> Accessories
+              </div>
+              <button class="btn-ghost" onclick="addAcc()">
+                <i class="fas fa-plus"></i> Add Item
               </button>
             </div>
-            <div
-              id="termsContainer"
-              style="display: flex; flex-direction: column; gap: 10px"
-            ></div>
+            <div class="pos-acc-grid" id="accGrid"></div>
           </div>
 
-          <div class="pos-bottom-bar">
-            <div>
-              <div class="pos-total-label">TOTAL PAYABLE</div>
-              <div class="pos-total-amount" id="liveTotal">Rs. 0.00</div>
+          <div class="card">
+            <div class="card-title-row">
+              <div class="card-title">
+                <i class="fas fa-mobile-alt"></i> Devices &amp; Custom Items
+              </div>
+            </div>
+            <div class="device-header-row">
+              <span>Model</span><span>Storage</span><span>IMEI / Serial</span
+              ><span>Qty</span><span>Price (Rs.)</span><span></span>
+            </div>
+            <div id="deviceArea"></div>
+            <button class="btn-dashed" onclick="addDevice()">
+              <i class="fas fa-plus"></i> Add Device / Custom Item
+            </button>
+          </div>
+
+          <div class="card">
+            <div class="card-title-row">
+              <div class="card-title">
+                <i class="fas fa-file-contract"></i> Terms &amp; Conditions
+              </div>
+              <button class="btn-ghost" onclick="addNewTerm()">
+                <i class="fas fa-plus"></i> Add Term
+              </button>
+            </div>
+            <div id="termsContainer"></div>
+          </div>
+
+          <div class="billing-summary">
+            <div class="summary-lines">
+              <div class="summary-row">
+                <span>Subtotal</span><span id="liveSubtotal">Rs. 0.00</span>
+              </div>
+              <div class="summary-row">
+                <div class="discount-input-wrap">
+                  <span>Discount</span>
+                  <input
+                    type="number"
+                    id="inDiscount"
+                    value="0"
+                    min="0"
+                    step="1"
+                    class="discount-input"
+                    onkeydown="if (event.key === 'Enter') applyDiscount()"
+                  />
+                  <button class="btn-apply" onclick="applyDiscount()">
+                    Apply
+                  </button>
+                </div>
+                <span id="liveDiscount" class="discount-amt">- Rs. 0.00</span>
+              </div>
+            </div>
+            <div class="summary-total-row">
+              <span>TOTAL PAYABLE</span>
+              <span id="liveTotal">Rs. 0.00</span>
             </div>
             <button class="pos-btn-download" onclick="generatePremiumPDF()">
-              <i class="fas fa-download"></i>
-              Download Invoice
+              <i class="fas fa-file-download"></i> Download Invoice
             </button>
           </div>
         </div>
 
-        <!-- ==================== HISTORY TAB ==================== -->
-        <div id="historyTab" class="history-panel">
-          <div class="history-header">
-            <h3>
-              <i class="fas fa-history" style="margin-right: 10px"></i>Invoice
-              History
-            </h3>
-            <button
-              class="pos-btn-add"
-              style="width: auto; padding: 10px 20px"
-              onclick="clearHistory()"
+        <!-- HISTORY TAB -->
+        <div id="historyTab" class="tab-panel" style="display: none">
+          <div class="page-header">
+            <div>
+              <h1>Invoice History</h1>
+              <p>View and manage past invoices</p>
+            </div>
+            <div
+              style="
+                display: flex;
+                gap: 10px;
+                align-items: center;
+                flex-wrap: wrap;
+              "
             >
-              <i class="fas fa-trash"></i> Clear All
+              <input
+                type="text"
+                id="historySearch"
+                class="pos-input"
+                placeholder="Search by name or invoice #..."
+                oninput="searchHistory()"
+                style="width: 240px"
+              />
+              <button class="btn-danger-outline" onclick="clearHistory()">
+                <i class="fas fa-trash"></i> Clear All
+              </button>
+            </div>
+          </div>
+          <div id="historyStats" class="history-stats"></div>
+          <div class="history-list" id="historyList"></div>
+        </div>
+
+        <!-- INVENTORY TAB -->
+        <div id="inventoryTab" class="tab-panel" style="display: none">
+          <div class="page-header">
+            <div>
+              <h1>Inventory</h1>
+              <p>Manage your product catalog</p>
+            </div>
+            <button class="btn-primary" onclick="addInventoryItem()">
+              <i class="fas fa-plus"></i> Add Product
             </button>
           </div>
-          <div class="history-list" id="historyList"></div>
+          <div class="card" style="padding: 0; overflow: hidden">
+            <table class="inv-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th style="text-align: left">Product Name</th>
+                  <th style="text-align: right">Price (Rs.)</th>
+                  <th style="text-align: center">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="inventoryTableBody"></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- ==================== PDF INVOICE TEMPLATE ==================== -->
+    <!-- PDF INVOICE TEMPLATE -->
     <div id="invoice-premium">
       <div class="invoice-pdf">
         <div class="invoice-card">
-          <!-- PDF Header -->
           <div class="pdf-header">
             <div class="pdf-header-top">
               <div class="pdf-brand">
                 <div class="pdf-brand-icon">TM</div>
                 <div class="pdf-brand-text">
                   <h1>Techno Mobile</h1>
-                  <p>AUTHORIZED RETAIL & REPAIR</p>
+                  <p>AUTHORIZED RETAIL &amp; REPAIR</p>
                 </div>
               </div>
-              <div class="pdf-badge">
-                <h2>INVOICE</h2>
-              </div>
+              <div class="pdf-badge"><h2>INVOICE</h2></div>
             </div>
-
-            <!-- Client Info -->
             <div class="pdf-info-grid">
               <div class="pdf-info-block">
-                <div class="pdf-info-label">INVOICE TO</div>
+                <div class="pdf-info-label">BILL TO</div>
                 <div class="pdf-info-value" id="pdfCustomerName">
                   Walk-in Customer
                 </div>
@@ -314,7 +307,13 @@
                 </div>
               </div>
               <div class="pdf-info-block">
-                <div style="display: flex; justify-content: space-between">
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    gap: 20px;
+                  "
+                >
                   <div>
                     <div class="pdf-info-label">INVOICE #</div>
                     <div class="pdf-info-value" id="pdfInvoiceDisplay">
@@ -329,10 +328,7 @@
               </div>
             </div>
           </div>
-
-          <!-- PDF Content -->
           <div class="pdf-content">
-            <!-- Items Table -->
             <div class="pdf-table-container">
               <table class="pdf-table">
                 <thead>
@@ -345,31 +341,26 @@
                     <th style="width: 25%; text-align: right">TOTAL (RS.)</th>
                   </tr>
                 </thead>
-                <tbody id="pdfItemsBody">
-                  <!-- Items will be inserted here -->
-                </tbody>
+                <tbody id="pdfItemsBody"></tbody>
               </table>
             </div>
-
-            <!-- Totals -->
             <div class="pdf-totals">
               <div class="pdf-totals-box">
                 <div class="pdf-total-row">
-                  <span>Sub Total</span>
-                  <span id="pdfSubTotal">Rs. 0.00</span>
+                  <span>Sub Total</span><span id="pdfSubTotal">Rs. 0.00</span>
                 </div>
                 <div class="pdf-total-row">
-                  <span>Discount</span>
-                  <span id="pdfDiscount" style="color: #ef4444">-Rs. 0.00</span>
+                  <span>Discount</span
+                  ><span id="pdfDiscount" style="color: #ef4444"
+                    >-Rs. 0.00</span
+                  >
                 </div>
                 <div class="pdf-total-row pdf-grand-total">
-                  <span>Grand Total</span>
-                  <span id="pdfGrandTotal">Rs. 0.00</span>
+                  <span>Grand Total</span
+                  ><span id="pdfGrandTotal">Rs. 0.00</span>
                 </div>
               </div>
             </div>
-
-            <!-- Footer -->
             <div class="pdf-footer">
               <div class="pdf-thankyou">
                 <h3>Thank you for your business!</h3>
@@ -379,10 +370,8 @@
                 </p>
               </div>
               <div class="pdf-terms">
-                <h4>Terms & Conditions</h4>
-                <ul id="pdfTermsList">
-                  <!-- Terms will be inserted here -->
-                </ul>
+                <h4>Terms &amp; Conditions</h4>
+                <ul id="pdfTermsList"></ul>
               </div>
             </div>
           </div>
@@ -390,7 +379,9 @@
       </div>
     </div>
 
-    <!-- Scripts -->
+    <!-- Toast -->
+    <div id="toast" class="toast"></div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="history.js"></script>
     <script src="script.js"></script>
