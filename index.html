@@ -215,8 +215,9 @@
               <span>TOTAL PAYABLE</span>
               <span id="liveTotal">Rs. 0.00</span>
             </div>
-            <button class="pos-btn-download" onclick="generatePremiumPDF()">
-              <i class="fas fa-file-download"></i> Download Invoice
+            <!-- CHANGED: Download button replaced with Save button -->
+            <button class="pos-btn-download" onclick="saveInvoice()">
+              <i class="fas fa-save"></i> Save Invoice
             </button>
           </div>
         </div>
@@ -277,6 +278,38 @@
               <tbody id="inventoryTableBody"></tbody>
             </table>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SAVE SUCCESS OVERLAY -->
+    <div
+      id="saveSuccessOverlay"
+      class="save-success-overlay"
+      style="display: none"
+    >
+      <div class="save-success-card">
+        <div class="save-success-icon">
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <h3>Invoice Saved!</h3>
+        <p id="saveSuccessInvNo" class="save-success-inv"></p>
+        <p class="save-success-sub">
+          Go to <strong>Invoice History</strong> to download the PDF anytime.
+        </p>
+        <div class="save-success-actions">
+          <button
+            class="save-success-btn-history"
+            onclick="closeSaveSuccess('history')"
+          >
+            <i class="fas fa-receipt"></i> View in History
+          </button>
+          <button
+            class="save-success-btn-new"
+            onclick="closeSaveSuccess('pos')"
+          >
+            <i class="fas fa-plus"></i> New Invoice
+          </button>
         </div>
       </div>
     </div>

@@ -371,7 +371,6 @@ window.addInventoryItem = function () {
   saveInventory(inventory)
   renderInventoryTab()
   showToast('Product added')
-  // Sync to acc grid
   syncInventoryToAccGrid()
 }
 
@@ -394,15 +393,14 @@ window.deleteInventoryItem = function (index) {
 }
 
 function syncInventoryToAccGrid() {
-  // Refresh POS accessories from inventory
   const accGrid = document.getElementById('accGrid')
   if (!accGrid) return
   accGrid.innerHTML = ''
   loadInventory().forEach((item) => addAcc(item.n, item.p, false))
 }
 
-// ---------- PDF GENERATION ----------
-window.generatePremiumPDF = function () {
+// ---------- SAVE INVOICE (replaces generatePremiumPDF) ----------
+window.saveInvoice = function () {
   const hasAccessories =
     document.querySelectorAll('.pos-acc-card .pos-check:checked').length > 0
   const hasDevices = Array.from(
@@ -420,17 +418,6 @@ window.generatePremiumPDF = function () {
   const customerPhone =
     document.getElementById('inPhone').value.trim() || 'Not Provided'
   const discount = parseFloat(document.getElementById('inDiscount').value) || 0
-
-  document.getElementById('pdfCustomerName').innerText = customerName
-  document.getElementById('pdfCustomerPhone').innerText = customerPhone
-  document.getElementById('pdfInvoiceDisplay').innerText = invoiceNo
-
-  const formattedDate = new Date().toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
-  document.getElementById('pdfDateDisplay').innerText = formattedDate
 
   let itemsHTML = ''
   let subtotal = 0
@@ -477,14 +464,11 @@ window.generatePremiumPDF = function () {
     return
   }
 
-  document.getElementById('pdfItemsBody').innerHTML = itemsHTML
-  document.getElementById('pdfSubTotal').innerText =
-    `Rs. ${subtotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
-  document.getElementById('pdfDiscount').innerText =
-    `-Rs. ${discount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
-  document.getElementById('pdfGrandTotal').innerText =
-    `Rs. ${(subtotal - discount).toLocaleString('en-US', { minimumFractionDigits: 2 })}`
-  document.getElementById('pdfTermsList').innerHTML = getSelectedTermsHTML()
+  const formattedDate = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
 
   // Save to history
   const history = JSON.parse(
@@ -502,24 +486,33 @@ window.generatePremiumPDF = function () {
   })
   localStorage.setItem(STORAGE_KEYS.INVOICE_HISTORY, JSON.stringify(history))
 
-  showToast('Generating PDF…')
-  generatePDFWithSettings(invoiceNo)
+  // Show success overlay
+  document.getElementById('saveSuccessInvNo').innerText = invoiceNo
+  document.getElementById('saveSuccessOverlay').style.display = 'flex'
 
-  // Reset for new invoice
-  setTimeout(() => {
-    document.getElementById('inNo').innerText = generateInvoiceNumber()
-    document.getElementById('inName').value = ''
-    document.getElementById('inPhone').value = ''
-    document.getElementById('inDiscount').value = 0
-    document.querySelectorAll('.pos-acc-card .pos-check').forEach((cb) => {
-      cb.checked = false
-      cb.closest('.pos-acc-card').classList.remove('checked')
-    })
-    document.getElementById('deviceArea').innerHTML = ''
-    recalc()
-  }, 800)
+  // Reset form for new invoice
+  document.getElementById('inNo').innerText = generateInvoiceNumber()
+  document.getElementById('inName').value = ''
+  document.getElementById('inPhone').value = ''
+  document.getElementById('inDiscount').value = 0
+  document.querySelectorAll('.pos-acc-card .pos-check').forEach((cb) => {
+    cb.checked = false
+    cb.closest('.pos-acc-card').classList.remove('checked')
+  })
+  document.getElementById('deviceArea').innerHTML = ''
+  recalc()
 }
 
+// Close save success overlay and navigate
+window.closeSaveSuccess = function (destination) {
+  document.getElementById('saveSuccessOverlay').style.display = 'none'
+  if (destination === 'history') {
+    switchTab('history')
+  }
+  // 'pos' just closes the overlay, user stays on POS
+}
+
+// ---------- PDF GENERATION (used only from History "View" button) ----------
 window.generatePDFWithSettings = function (filename) {
   const element = document.getElementById('invoice-premium')
   if (!element) return
@@ -602,7 +595,6 @@ function renderHistoryList(history) {
   const historyList = document.getElementById('historyList')
   if (!historyList) return
 
-  // Stats
   const statsEl = document.getElementById('historyStats')
   if (statsEl) {
     const allHistory = JSON.parse(
@@ -637,7 +629,7 @@ function renderHistoryList(history) {
       </div>
       <div class="history-amount">Rs. ${(inv.total || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
       <div class="history-actions">
-        <button class="history-btn view" onclick="viewInvoice(${index})"><i class="fas fa-eye"></i> View</button>
+        <button class="history-btn view" onclick="viewInvoice(${index})"><i class="fas fa-file-download"></i> Download PDF</button>
         <button class="history-btn delete" onclick="deleteFromHistory(${index})"><i class="fas fa-trash"></i></button>
       </div>
     </div>
