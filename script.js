@@ -541,6 +541,8 @@ window.saveInvoice = function () {
     itemsHTML,
     subtotal,
     discount,
+    status: 'paid',
+    paidAmount: subtotal - discount,
     savedAt: new Date().toISOString(),
   })
   localStorage.setItem(STORAGE_KEYS.INVOICE_HISTORY, JSON.stringify(history))
@@ -677,4 +679,98 @@ document.addEventListener('DOMContentLoaded', () => {
 window.onload = () => {
   document.getElementById('loginPage').style.display = 'flex'
   document.getElementById('posSystem').style.display = 'none'
+}
+
+// ─── DARK MODE ──────────────────────────────────────────────────────────────
+;(function initDarkMode() {
+  const saved = localStorage.getItem('techno_theme') || 'light'
+  _applyTheme(saved)
+})()
+
+function _applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme)
+  localStorage.setItem('techno_theme', theme)
+  const icon = document.getElementById('darkModeIcon')
+  if (icon) icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon'
+}
+
+window.toggleDarkMode = function () {
+  const current = document.documentElement.getAttribute('data-theme') || 'light'
+  _applyTheme(current === 'dark' ? 'light' : 'dark')
+  // Re-render chart with new colors
+  if (
+    typeof displayHistory === 'function' &&
+    document.getElementById('historyTab')?.style.display !== 'none'
+  ) {
+    displayHistory()
+  }
+}
+
+// ─── DATA BACKUP & RESTORE ──────────────────────────────────────────────────
+window.backupData = function () {
+  const backup = {
+    version: '3.0',
+    exportedAt: new Date().toISOString(),
+    data: {
+      [STORAGE_KEYS.INVOICE_HISTORY]: JSON.parse(
+        localStorage.getItem(STORAGE_KEYS.INVOICE_HISTORY) || '[]',
+      ),
+      [STORAGE_KEYS.INVENTORY]: JSON.parse(
+        localStorage.getItem(STORAGE_KEYS.INVENTORY) || '[]',
+      ),
+      [STORAGE_KEYS.TERMS]: JSON.parse(
+        localStorage.getItem(STORAGE_KEYS.TERMS) || '[]',
+      ),
+    },
+  }
+  const blob = new Blob([JSON.stringify(backup, null, 2)], {
+    type: 'application/json',
+  })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `TM_Backup_${new Date().toISOString().slice(0, 10)}.json`
+  a.click()
+  URL.revokeObjectURL(url)
+  showToast('Backup downloaded!', 'success')
+}
+
+window.restoreData = function () {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = '.json'
+  input.onchange = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      try {
+        const backup = JSON.parse(ev.target.result)
+        if (!backup.data) throw new Error('Invalid backup file')
+        if (
+          !confirm(
+            `Restore backup from ${backup.exportedAt ? new Date(backup.exportedAt).toLocaleString() : 'unknown date'}?\n\nThis will REPLACE your current data.`,
+          )
+        )
+          return
+        Object.entries(backup.data).forEach(([key, val]) => {
+          localStorage.setItem(key, JSON.stringify(val))
+        })
+        showToast('Data restored successfully!', 'success')
+        setTimeout(() => location.reload(), 1000)
+      } catch (err) {
+        showToast('Invalid backup file', 'error')
+        console.error(err)
+      }
+    }
+    reader.readAsText(file)
+  }
+  input.click()
+}
+
+window.openSettingsModal = function () {
+  document.getElementById('settingsModal').style.display = 'flex'
+}
+window.closeSettingsModal = function () {
+  document.getElementById('settingsModal').style.display = 'none'
 }

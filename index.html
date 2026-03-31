@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -112,6 +112,20 @@
           <div class="user-badge">
             <i class="fas fa-user-circle"></i><span id="loggedUser"></span>
           </div>
+          <button
+            class="icon-btn"
+            onclick="toggleDarkMode()"
+            title="Toggle Dark Mode"
+          >
+            <i class="fas fa-moon" id="darkModeIcon"></i>
+          </button>
+          <button
+            class="icon-btn"
+            onclick="openSettingsModal()"
+            title="Backup & Restore"
+          >
+            <i class="fas fa-database"></i>
+          </button>
           <button class="logout-btn" onclick="logout()" title="Logout">
             <i class="fas fa-sign-out-alt"></i>
           </button>
@@ -134,7 +148,6 @@
             </div>
           </div>
 
-          <!-- Customer Details -->
           <div class="card">
             <div class="card-title">
               <i class="fas fa-user-tag"></i> Customer Details
@@ -167,7 +180,6 @@
             </div>
           </div>
 
-          <!-- Accessories -->
           <div class="card">
             <div class="card-title-row">
               <div class="card-title">
@@ -180,7 +192,6 @@
             <div class="pos-acc-grid" id="accGrid"></div>
           </div>
 
-          <!-- Devices & Custom Items -->
           <div class="card">
             <div class="card-title-row">
               <div class="card-title">
@@ -197,7 +208,6 @@
             </button>
           </div>
 
-          <!-- Terms & Conditions -->
           <div class="card">
             <div class="card-title-row">
               <div class="card-title">
@@ -210,7 +220,6 @@
             <div id="termsContainer"></div>
           </div>
 
-          <!-- Billing Summary -->
           <div class="billing-summary">
             <div class="summary-lines">
               <div class="summary-row">
@@ -236,8 +245,7 @@
               </div>
             </div>
             <div class="summary-total-row">
-              <span>TOTAL PAYABLE</span>
-              <span id="liveTotal">Rs. 0.00</span>
+              <span>TOTAL PAYABLE</span><span id="liveTotal">Rs. 0.00</span>
             </div>
             <button class="pos-btn-download" onclick="saveInvoice()">
               <i class="fas fa-save"></i> Save Invoice
@@ -251,7 +259,9 @@
           <div class="page-header">
             <div>
               <h1>Invoice History</h1>
-              <p>View, search, and manage all saved invoices</p>
+              <p>
+                Revenue analytics, payment tracking &amp; invoice management
+              </p>
             </div>
             <div
               style="
@@ -265,10 +275,21 @@
                 type="text"
                 id="historySearch"
                 class="pos-input"
-                placeholder="Search by name, phone, or invoice #..."
+                placeholder="Search name, phone, invoice #..."
                 oninput="searchHistory()"
-                style="width: 260px"
+                style="width: 240px"
               />
+              <select
+                id="statusFilter"
+                class="pos-input"
+                onchange="displayHistory()"
+                style="width: 130px"
+              >
+                <option value="all">All Status</option>
+                <option value="paid">Paid</option>
+                <option value="pending">Pending</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
               <button class="btn-export" onclick="exportHistoryCSV()">
                 <i class="fas fa-file-csv"></i> Export CSV
               </button>
@@ -277,7 +298,48 @@
               </button>
             </div>
           </div>
+
           <div id="historyStats" class="history-stats"></div>
+
+          <!-- Revenue Chart -->
+          <div
+            id="revenueChartContainer"
+            class="card chart-card"
+            style="display: none"
+          >
+            <div class="card-title-row">
+              <div class="card-title">
+                <i class="fas fa-chart-bar"></i> Revenue Overview
+              </div>
+              <div class="chart-tabs">
+                <button
+                  class="chart-tab-btn active"
+                  data-mode="daily"
+                  onclick="setChartMode('daily')"
+                >
+                  Daily
+                </button>
+                <button
+                  class="chart-tab-btn"
+                  data-mode="weekly"
+                  onclick="setChartMode('weekly')"
+                >
+                  Weekly
+                </button>
+                <button
+                  class="chart-tab-btn"
+                  data-mode="monthly"
+                  onclick="setChartMode('monthly')"
+                >
+                  Monthly
+                </button>
+              </div>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="revenueChart"></canvas>
+            </div>
+          </div>
+
           <div class="history-list" id="historyList"></div>
         </div>
 
@@ -286,10 +348,7 @@
           <div class="page-header">
             <div>
               <h1>Inventory</h1>
-              <p>
-                Manage your product catalog — changes sync to the POS screen
-                instantly
-              </p>
+              <p>Manage your product catalog — changes sync to POS instantly</p>
             </div>
             <button class="btn-primary" onclick="addInventoryItem()">
               <i class="fas fa-plus"></i> Add Product
@@ -309,9 +368,8 @@
             </table>
           </div>
           <p class="inv-hint">
-            <i class="fas fa-info-circle"></i> Click on any name or price to
-            edit it inline. Changes sync to the POS accessories grid
-            automatically.
+            <i class="fas fa-info-circle"></i> Click any name or price to edit
+            inline. Changes sync to the POS accessories grid automatically.
           </p>
         </div>
       </div>
@@ -324,9 +382,7 @@
       style="display: none"
     >
       <div class="save-success-card">
-        <div class="save-success-icon">
-          <i class="fas fa-check-circle"></i>
-        </div>
+        <div class="save-success-icon"><i class="fas fa-check-circle"></i></div>
         <h3>Invoice Saved!</h3>
         <p id="saveSuccessInvNo" class="save-success-inv"></p>
         <p class="save-success-sub">
@@ -345,6 +401,170 @@
           >
             <i class="fas fa-plus"></i> New Invoice
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAYMENT MODAL -->
+    <div
+      id="paymentModal"
+      class="modal-overlay"
+      style="display: none"
+      onclick="if (event.target === this) closePaymentModal()"
+    >
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3><i class="fas fa-credit-card"></i> Manage Payment</h3>
+          <button class="modal-close" onclick="closePaymentModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="pm-invoice-info">
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 12px;
+              "
+            >
+              <span class="pm-inv-no" id="pmInvoiceNo"></span>
+              <span
+                style="font-size: 13px; color: var(--gray)"
+                id="pmCustomerName"
+              ></span>
+            </div>
+            <div class="pm-amounts">
+              <div class="pm-amount-row">
+                <span>Invoice Total</span><strong id="pmTotal">—</strong>
+              </div>
+              <div class="pm-amount-row">
+                <span>Paid So Far</span
+                ><strong id="pmPaid" style="color: #059669">—</strong>
+              </div>
+              <div class="pm-amount-row">
+                <span>Balance Due</span
+                ><strong id="pmBalance" style="color: #ef4444">—</strong>
+              </div>
+            </div>
+          </div>
+          <div class="pm-status-group">
+            <p class="pm-section-label">Set Payment Status</p>
+            <div class="pm-status-btns">
+              <button
+                class="pm-status-btn paid"
+                data-status="paid"
+                onclick="pmSetStatus('paid')"
+              >
+                <i class="fas fa-check-circle"></i> Paid in Full
+              </button>
+              <button
+                class="pm-status-btn pending"
+                data-status="pending"
+                onclick="pmSetStatus('pending')"
+              >
+                <i class="fas fa-clock"></i> Partial / Pending
+              </button>
+              <button
+                class="pm-status-btn cancelled"
+                data-status="cancelled"
+                onclick="pmSetStatus('cancelled')"
+              >
+                <i class="fas fa-times-circle"></i> Cancelled
+              </button>
+            </div>
+          </div>
+          <div
+            class="pm-amount-input-row"
+            id="pmAmountRow"
+            style="display: none"
+          >
+            <label>Record New Payment Amount (Rs.)</label>
+            <input
+              type="number"
+              id="pmAmount"
+              class="pos-input"
+              placeholder="Enter amount received now..."
+              min="0"
+              step="1"
+            />
+            <p class="pm-hint">
+              <i class="fas fa-info-circle" style="color: var(--primary)"></i>
+              This amount will be added to the existing paid amount.
+            </p>
+          </div>
+          <input type="hidden" id="pmModalIndex" />
+        </div>
+        <div class="modal-footer">
+          <button class="btn-ghost" onclick="closePaymentModal()">
+            Cancel
+          </button>
+          <button class="btn-primary" onclick="savePayment()">
+            <i class="fas fa-save"></i> Save Payment
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS / BACKUP MODAL -->
+    <div
+      id="settingsModal"
+      class="modal-overlay"
+      style="display: none"
+      onclick="if (event.target === this) closeSettingsModal()"
+    >
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3><i class="fas fa-database"></i> Data Backup &amp; Restore</h3>
+          <button class="modal-close" onclick="closeSettingsModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="backup-section">
+            <div class="backup-icon backup-export">
+              <i class="fas fa-cloud-download-alt"></i>
+            </div>
+            <div>
+              <h4>Export Backup</h4>
+              <p>
+                Download all your invoices, inventory, and terms as a JSON file.
+                Store it safely.
+              </p>
+              <button
+                class="btn-primary"
+                onclick="
+                  backupData()
+                  closeSettingsModal()
+                "
+              >
+                <i class="fas fa-download"></i> Download Backup
+              </button>
+            </div>
+          </div>
+          <div class="backup-divider"></div>
+          <div class="backup-section">
+            <div class="backup-icon backup-import">
+              <i class="fas fa-cloud-upload-alt"></i>
+            </div>
+            <div>
+              <h4>Restore from Backup</h4>
+              <p>
+                Upload a previously exported <code>.json</code> backup file.
+                <strong>This will replace all current data.</strong>
+              </p>
+              <button
+                class="btn-danger-outline"
+                onclick="
+                  restoreData()
+                  closeSettingsModal()
+                "
+              >
+                <i class="fas fa-upload"></i> Restore Backup
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -397,6 +617,7 @@
             </div>
           </div>
           <div class="pdf-content">
+            <div id="pdfPaymentStatus"></div>
             <div class="pdf-table-container">
               <table class="pdf-table">
                 <thead>
@@ -418,8 +639,10 @@
                   <span>Sub Total</span><span id="pdfSubTotal">Rs. 0.00</span>
                 </div>
                 <div class="pdf-total-row">
-                  <span>Discount</span>
-                  <span id="pdfDiscount" style="color: #ef4444">-Rs. 0.00</span>
+                  <span>Discount</span
+                  ><span id="pdfDiscount" style="color: #ef4444"
+                    >-Rs. 0.00</span
+                  >
                 </div>
                 <div class="pdf-total-row pdf-grand-total">
                   <span>Grand Total</span
@@ -445,10 +668,10 @@
       </div>
     </div>
 
-    <!-- Toast notification -->
     <div id="toast" class="toast"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="history.js"></script>
     <script src="script.js"></script>
   </body>
