@@ -1,4 +1,4 @@
-// script.js — Techno Mobile POS v2.2
+// script.js — Techno Mobile POS v3.0 - Fully Fixed
 
 const STORAGE_KEYS = {
   INVOICE_HISTORY: 'techno_invoice_history',
@@ -49,9 +49,11 @@ function loadInventory() {
     return defaultInventory
   }
 }
+
 function saveInventory(inv) {
   localStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(inv))
 }
+
 function loadTerms() {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEYS.TERMS)) || defaultTerms
@@ -59,6 +61,7 @@ function loadTerms() {
     return defaultTerms
   }
 }
+
 function saveTerms(terms) {
   localStorage.setItem(STORAGE_KEYS.TERMS, JSON.stringify(terms))
 }
@@ -112,10 +115,9 @@ window.login = function () {
     errEl.style.display = 'flex'
     document.getElementById('password').value = ''
     document.getElementById('password').focus()
-    // Shake animation
     const card = document.querySelector('.login-card')
     card.style.animation = 'none'
-    card.offsetHeight // force reflow
+    card.offsetHeight
     card.style.animation = 'shake 0.4s ease'
     setTimeout(() => {
       card.style.animation = ''
@@ -199,7 +201,6 @@ window.addNewTerm = function () {
   })
   saveTerms(terms)
   displayTerms()
-  // Focus the new term's text input
   const inputs = document.querySelectorAll('.term-item input[type="text"]')
   if (inputs.length) {
     const last = inputs[inputs.length - 1]
@@ -298,31 +299,40 @@ function saveInventoryToStorage() {
   renderInventoryTab()
 }
 
-// ---------- DEVICES ----------
+// ---------- DEVICES - FIXED ----------
 window.addDevice = function () {
   const deviceArea = document.getElementById('deviceArea')
+  if (!deviceArea) return
+
   const div = document.createElement('div')
   div.className = 'pos-device-row'
   div.innerHTML = `
-    <input type="text" class="d-name" placeholder="Device Model" oninput="recalc()">
-    <input type="text" class="d-storage" placeholder="Storage / Variant" oninput="recalc()">
-    <input type="text" class="d-imei" placeholder="IMEI / Serial No." oninput="recalc()">
+    <input type="text" class="d-name" placeholder="iPhone 15 Pro, Samsung S24, etc." oninput="recalc()">
+    <input type="text" class="d-storage" placeholder="128GB, 256GB, etc." oninput="recalc()">
+    <input type="text" class="d-imei" placeholder="IMEI / Serial Number" oninput="recalc()">
     <input type="number" class="d-qty" value="1" min="1" oninput="recalc()">
-    <input type="number" class="d-price price-input" placeholder="0.00" min="0" oninput="recalc()">
+    <input type="number" class="d-price" placeholder="0.00" min="0" step="1" oninput="recalc()">
     <button class="device-del-btn" onclick="removeDevice(this)" title="Remove item">
-      <i class="fas fa-times"></i>
+      <i class="fas fa-trash-alt"></i>
     </button>
   `
   deviceArea.appendChild(div)
-  div.querySelector('.d-name').focus()
+
+  const nameInput = div.querySelector('.d-name')
+  if (nameInput) nameInput.focus()
+
   recalc()
+  showToast('New item added', 'success')
 }
 
 window.removeDevice = function (btn) {
-  if (!confirm('Remove this item?')) return
-  btn.parentElement.remove()
-  recalc()
-  showToast('Item removed')
+  if (!confirm('Remove this item from the invoice?')) return
+  const row = btn.closest('.pos-device-row')
+  if (row) {
+    row.remove()
+    recalc()
+    showToast('Item removed')
+  }
 }
 
 // ---------- RECALC ----------
@@ -391,14 +401,14 @@ function renderInventoryTab() {
   tbody.innerHTML = inventory
     .map(
       (item, i) => `
-    <tr>
-      <td style="color:var(--gray);font-size:12px;width:40px;font-weight:700">${i + 1}</td>
+     <tr>
+      <td style="color:var(--gray);font-size:12px;width:50px;font-weight:700">${i + 1}</td>
       <td><input class="inv-name-input" value="${item.n.replace(/"/g, '&quot;')}" onchange="updateInventoryItem(${i},'n',this.value)" placeholder="Product name"></td>
       <td style="text-align:right"><input class="inv-price-input" type="number" value="${item.p}" min="0" onchange="updateInventoryItem(${i},'p',this.value)"></td>
       <td style="text-align:center">
         <button class="inv-del-btn" onclick="deleteInventoryItem(${i})" title="Delete"><i class="fas fa-trash"></i></button>
       </td>
-    </tr>
+     </tr>
   `,
     )
     .join('')
@@ -411,7 +421,6 @@ window.addInventoryItem = function () {
   renderInventoryTab()
   showToast('Product added')
   syncInventoryToAccGrid()
-  // Focus the new item's name input
   const inputs = document.querySelectorAll('.inv-name-input')
   if (inputs.length) {
     const last = inputs[inputs.length - 1]
@@ -466,7 +475,6 @@ window.saveInvoice = function () {
   const discount = parseFloat(document.getElementById('inDiscount').value) || 0
   const dateInput = document.getElementById('inDate').value
 
-  // Format date from input or fallback to today
   let formattedDate
   if (dateInput) {
     const d = new Date(dateInput)
@@ -528,7 +536,6 @@ window.saveInvoice = function () {
     return
   }
 
-  // Save to history (newest first)
   const history = JSON.parse(
     localStorage.getItem(STORAGE_KEYS.INVOICE_HISTORY) || '[]',
   )
@@ -547,11 +554,9 @@ window.saveInvoice = function () {
   })
   localStorage.setItem(STORAGE_KEYS.INVOICE_HISTORY, JSON.stringify(history))
 
-  // Show success overlay
   document.getElementById('saveSuccessInvNo').innerText = invoiceNo
   document.getElementById('saveSuccessOverlay').style.display = 'flex'
 
-  // Reset form
   document.getElementById('inNo').innerText = generateInvoiceNumber()
   document.getElementById('inName').value = ''
   document.getElementById('inPhone').value = ''
@@ -570,7 +575,7 @@ window.closeSaveSuccess = function (destination) {
   if (destination === 'history') switchTab('history')
 }
 
-// ---------- PDF GENERATION (called from history.js) ----------
+// ---------- PDF GENERATION ----------
 window.generatePDFWithSettings = function (filename) {
   const element = document.getElementById('invoice-premium')
   if (!element) return
@@ -625,7 +630,7 @@ window.generatePDFWithSettings = function (filename) {
     })
 }
 
-// ---------- HISTORY SEARCH (used by history tab input) ----------
+// ---------- HISTORY SEARCH ----------
 window.searchHistory = function () {
   if (typeof displayHistory === 'function') displayHistory()
 }
@@ -640,7 +645,6 @@ window.clearHistory = function () {
 
 // ---------- KEYBOARD SHORTCUTS ----------
 document.addEventListener('keydown', (e) => {
-  // Ctrl/Cmd + S = Save invoice (when on POS tab)
   if ((e.ctrlKey || e.metaKey) && e.key === 's') {
     const posTab = document.getElementById('posTab')
     if (posTab && posTab.style.display !== 'none') {
@@ -648,7 +652,6 @@ document.addEventListener('keydown', (e) => {
       saveInvoice()
     }
   }
-  // Ctrl/Cmd + 1/2/3 = Switch tabs
   if ((e.ctrlKey || e.metaKey) && e.key === '1') {
     e.preventDefault()
     switchTab('pos')
@@ -681,7 +684,7 @@ window.onload = () => {
   document.getElementById('posSystem').style.display = 'none'
 }
 
-// ─── DARK MODE ──────────────────────────────────────────────────────────────
+// ---------- DARK MODE ----------
 ;(function initDarkMode() {
   const saved = localStorage.getItem('techno_theme') || 'light'
   _applyTheme(saved)
@@ -697,7 +700,6 @@ function _applyTheme(theme) {
 window.toggleDarkMode = function () {
   const current = document.documentElement.getAttribute('data-theme') || 'light'
   _applyTheme(current === 'dark' ? 'light' : 'dark')
-  // Re-render chart with new colors
   if (
     typeof displayHistory === 'function' &&
     document.getElementById('historyTab')?.style.display !== 'none'
@@ -706,7 +708,7 @@ window.toggleDarkMode = function () {
   }
 }
 
-// ─── DATA BACKUP & RESTORE ──────────────────────────────────────────────────
+// ---------- DATA BACKUP & RESTORE ----------
 window.backupData = function () {
   const backup = {
     version: '3.0',
@@ -771,6 +773,21 @@ window.restoreData = function () {
 window.openSettingsModal = function () {
   document.getElementById('settingsModal').style.display = 'flex'
 }
+
 window.closeSettingsModal = function () {
   document.getElementById('settingsModal').style.display = 'none'
 }
+
+// Add shake animation keyframes
+const style = document.createElement('style')
+style.textContent = `
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    15% { transform: translateX(-8px); }
+    30% { transform: translateX(8px); }
+    45% { transform: translateX(-5px); }
+    60% { transform: translateX(5px); }
+    80% { transform: translateX(-3px); }
+  }
+`
+document.head.appendChild(style)

@@ -1,4 +1,4 @@
-// history.js — Invoice History v3.1
+// history.js — Invoice History v3.1 - Fully Fixed
 
 // ─── CHART STATE ─────────────────────────────────────────────────────────────
 let _chartMode = 'weekly'
@@ -53,11 +53,11 @@ function _renderStats(allHistory, filtered) {
   const pendingBal = pendingInvs.reduce((s, inv) => s + _balanceDue(inv), 0)
 
   el.innerHTML = `
-    <div class="stat-card" style="border-left:3px solid var(--primary)">
+    <div class="stat-card">
       <div class="stat-label">Total Invoices</div>
       <div class="stat-value blue">${allHistory.length}</div>
     </div>
-    <div class="stat-card" style="border-left:3px solid var(--secondary)">
+    <div class="stat-card">
       <div class="stat-label">Total Revenue</div>
       <div class="stat-value green">Rs. ${_fmt(totalRev)}</div>
     </div>
@@ -65,11 +65,11 @@ function _renderStats(allHistory, filtered) {
       <div class="stat-label">Avg. Invoice</div>
       <div class="stat-value">Rs. ${_fmt(avg)}</div>
     </div>
-    <div class="stat-card" style="border-left:3px solid var(--warning)">
+    <div class="stat-card">
       <div class="stat-label">Today's Revenue</div>
       <div class="stat-value" style="color:var(--warning)">Rs. ${_fmt(todayRev)}</div>
     </div>
-    <div class="stat-card" style="border-left:3px solid var(--danger)">
+    <div class="stat-card">
       <div class="stat-label">Pending Balance</div>
       <div class="stat-value" style="color:var(--danger);font-size:17px">
         Rs. ${_fmt(pendingBal)}
@@ -276,7 +276,6 @@ function _fmt(n) {
 }
 
 function _balanceDue(inv) {
-  // If status is paid, balance is always 0
   if ((inv.status || 'paid') === 'paid') return 0
   return Math.max(0, (inv.total || 0) - (inv.paidAmount || 0))
 }
@@ -293,7 +292,6 @@ function _statusBadge(inv) {
     return `<span class="status-badge paid"><i class="fas fa-check-circle"></i> Paid</span>`
   if (s === 'cancelled')
     return `<span class="status-badge cancelled"><i class="fas fa-times-circle"></i> Cancelled</span>`
-  // pending
   const bal = _balanceDue(inv)
   return bal > 0
     ? `<span class="status-badge pending"><i class="fas fa-clock"></i> Pending · Rs.${_fmt(bal)}</span>`
@@ -319,7 +317,7 @@ function _renderList(filtered, allHistory) {
   }
 
   el.innerHTML = filtered
-    .map((inv) => {
+    .map((inv, idx) => {
       const realIdx = allHistory.findIndex(
         (h) =>
           h.invoiceNo === inv.invoiceNo &&
@@ -382,7 +380,6 @@ window.viewInvoice = function (index) {
     const paid = _paidAmount(inv)
     const bal = _balanceDue(inv)
 
-    // Fill PDF fields
     document.getElementById('pdfCustomerName').innerText =
       inv.customerName || 'Walk-in Customer'
     document.getElementById('pdfCustomerPhone').innerText =
@@ -393,7 +390,8 @@ window.viewInvoice = function (index) {
       inv.date || new Date().toLocaleDateString()
     document.getElementById('pdfItemsBody').innerHTML =
       inv.itemsHTML ||
-      '<tr><td colspan="4" style="text-align:center;padding:20px">No items found</td></tr>'
+      '新闻报道<td colspan="4" style="text-align:center;padding:20px">No items found</td>\
+      </tr>'
     document.getElementById('pdfSubTotal').innerText =
       `Rs. ${_fmt(inv.subtotal || 0)}`
     document.getElementById('pdfDiscount').innerText =
@@ -401,7 +399,6 @@ window.viewInvoice = function (index) {
     document.getElementById('pdfGrandTotal').innerText =
       `Rs. ${_fmt(inv.total || 0)}`
 
-    // ── Payment status block on PDF ──
     const pdfPs = document.getElementById('pdfPaymentStatus')
     if (pdfPs) {
       if (s === 'paid') {
@@ -447,11 +444,10 @@ window.viewInvoice = function (index) {
             </div>
           </div>`
       } else {
-        pdfPs.innerHTML = '' // pending with 0 balance = effectively paid — show nothing extra
+        pdfPs.innerHTML = ''
       }
     }
 
-    // Terms
     const terms = JSON.parse(localStorage.getItem('techno_terms') || '[]')
     const selected = terms.filter((t) => t.selected)
     const pdfTerms = document.getElementById('pdfTermsList')
@@ -467,7 +463,6 @@ window.viewInvoice = function (index) {
               .join('')
     }
 
-    // Loading state on button
     const btn = document.getElementById(`dl-btn-${index}`)
     if (btn) {
       btn.disabled = true
@@ -505,7 +500,6 @@ window.shareWhatsApp = function (index) {
   const paid = _paidAmount(inv)
   const bal = _balanceDue(inv)
 
-  // ── Parse items from stored HTML ──
   let itemsText = ''
   try {
     const tmp = document.createElement('table')
@@ -521,7 +515,6 @@ window.shareWhatsApp = function (index) {
     })
   } catch (e) {}
 
-  // ── Payment status block — mirrors PDF exactly ──
   let statusBlock = ''
   if (s === 'paid') {
     statusBlock =
@@ -534,7 +527,6 @@ window.shareWhatsApp = function (index) {
       `❌ *CANCELLED*\n` +
       `This invoice has been voided.`
   } else {
-    // pending / partial
     statusBlock =
       `━━━━━━━━━━━━━━━━━\n` +
       `⏳ *PARTIAL PAYMENT — BALANCE DUE*\n` +
@@ -543,7 +535,6 @@ window.shareWhatsApp = function (index) {
       `\nPlease settle the remaining balance at your earliest convenience.`
   }
 
-  // ── Full message ──
   const discountLine =
     inv.discount && inv.discount > 0
       ? `🏷️ Discount: -Rs. ${_fmt(inv.discount)}\n`
@@ -573,11 +564,9 @@ window.shareWhatsApp = function (index) {
     `━━━━━━━━━━━━━━━━━━━━━\n` +
     `🙏 _Thank you for choosing Techno Mobile!_`
 
-  // ── Phone number handling ──
   const raw = (inv.phone || '').replace(/\D/g, '')
   let intlPhone = ''
   if (raw.length >= 9) {
-    // Sri Lanka: 07x xxxxxxx → 94 7x xxxxxxx
     intlPhone = raw.startsWith('0') ? '94' + raw.slice(1) : raw
   }
 
@@ -616,12 +605,10 @@ window.openPaymentModal = function (index) {
   document.getElementById('pmAmount').value = bal > 0 ? bal : ''
   document.getElementById('pmModalIndex').value = index
 
-  // Set active status button
   document
     .querySelectorAll('.pm-status-btn')
     .forEach((b) => b.classList.toggle('active', b.dataset.status === s))
 
-  // Show/hide amount input row based on current status
   const amtRow = document.getElementById('pmAmountRow')
   if (amtRow) amtRow.style.display = s === 'pending' ? 'flex' : 'none'
 
@@ -653,14 +640,11 @@ window.savePayment = function () {
   const amtInput = parseFloat(document.getElementById('pmAmount').value) || 0
 
   if (newStatus === 'paid') {
-    // Mark fully paid
     inv.status = 'paid'
     inv.paidAmount = inv.total || 0
   } else if (newStatus === 'cancelled') {
     inv.status = 'cancelled'
-    // paidAmount unchanged
   } else {
-    // Partial / pending
     if (amtInput < 0) {
       showToast('Amount cannot be negative', 'error')
       return
@@ -674,7 +658,6 @@ window.savePayment = function () {
 
     const newPaid = parseFloat((currentPaid + amtInput).toFixed(2))
     inv.paidAmount = newPaid
-    // Auto-flip to paid if fully settled
     inv.status = newPaid >= (inv.total || 0) ? 'paid' : 'pending'
   }
 

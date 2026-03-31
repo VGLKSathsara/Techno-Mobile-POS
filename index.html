@@ -2,7 +2,10 @@
 <html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=yes"
+    />
     <title>Techno Mobile | Premium POS System</title>
     <link
       href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&family=Space+Mono:wght@400;700&display=swap"
@@ -134,7 +137,7 @@
 
       <!-- Main Content -->
       <div class="pos-main">
-        <!-- POS TAB -->
+        <!-- POS TAB - COMPLETELY RESTRUCTURED -->
         <div id="posTab" class="tab-panel">
           <div class="page-header">
             <div>
@@ -148,13 +151,14 @@
             </div>
           </div>
 
+          <!-- Customer Details Card -->
           <div class="card">
             <div class="card-title">
               <i class="fas fa-user-tag"></i> Customer Details
             </div>
             <div class="pos-input-grid">
               <div class="pos-input-group">
-                <span class="pos-label">Customer Name</span>
+                <span class="pos-label">CUSTOMER NAME</span>
                 <input
                   type="text"
                   id="inName"
@@ -163,7 +167,7 @@
                 />
               </div>
               <div class="pos-input-group">
-                <span class="pos-label">Contact No.</span>
+                <span class="pos-label">CONTACT NO.</span>
                 <input
                   type="text"
                   id="inPhone"
@@ -174,12 +178,13 @@
                 />
               </div>
               <div class="pos-input-group">
-                <span class="pos-label">Invoice Date</span>
+                <span class="pos-label">INVOICE DATE</span>
                 <input type="date" id="inDate" class="pos-input" />
               </div>
             </div>
           </div>
 
+          <!-- Accessories Card -->
           <div class="card">
             <div class="card-title-row">
               <div class="card-title">
@@ -192,22 +197,32 @@
             <div class="pos-acc-grid" id="accGrid"></div>
           </div>
 
+          <!-- Devices Card -->
           <div class="card">
             <div class="card-title-row">
               <div class="card-title">
                 <i class="fas fa-mobile-alt"></i> Devices &amp; Custom Items
               </div>
             </div>
-            <div class="device-header-row">
-              <span>Model</span><span>Storage</span><span>IMEI / Serial</span
-              ><span>Qty</span><span>Price (Rs.)</span><span></span>
+
+            <!-- Device Header -->
+            <div class="device-header">
+              <div class="device-header-item">Model / Item Name</div>
+              <div class="device-header-item">Storage / Variant</div>
+              <div class="device-header-item">IMEI / Serial No.</div>
+              <div class="device-header-item">Qty</div>
+              <div class="device-header-item">Price (Rs.)</div>
+              <div class="device-header-item"></div>
             </div>
+
             <div id="deviceArea"></div>
+
             <button class="btn-dashed" onclick="addDevice()">
               <i class="fas fa-plus"></i> Add Device / Custom Item
             </button>
           </div>
 
+          <!-- Terms Card -->
           <div class="card">
             <div class="card-title-row">
               <div class="card-title">
@@ -217,13 +232,15 @@
                 <i class="fas fa-plus"></i> Add Term
               </button>
             </div>
-            <div id="termsContainer"></div>
+            <div id="termsContainer" class="terms-container"></div>
           </div>
 
+          <!-- Billing Summary -->
           <div class="billing-summary">
             <div class="summary-lines">
               <div class="summary-row">
-                <span>Subtotal</span><span id="liveSubtotal">Rs. 0.00</span>
+                <span>Subtotal</span>
+                <span id="liveSubtotal" class="summary-value">Rs. 0.00</span>
               </div>
               <div class="summary-row">
                 <div class="discount-input-wrap">
@@ -235,7 +252,6 @@
                     min="0"
                     step="1"
                     class="discount-input"
-                    onkeydown="if (event.key === 'Enter') applyDiscount()"
                   />
                   <button class="btn-apply" onclick="applyDiscount()">
                     Apply
@@ -245,7 +261,8 @@
               </div>
             </div>
             <div class="summary-total-row">
-              <span>TOTAL PAYABLE</span><span id="liveTotal">Rs. 0.00</span>
+              <span>TOTAL PAYABLE</span>
+              <span id="liveTotal" class="total-amount">Rs. 0.00</span>
             </div>
             <button class="pos-btn-download" onclick="saveInvoice()">
               <i class="fas fa-save"></i> Save Invoice
@@ -354,14 +371,14 @@
               <i class="fas fa-plus"></i> Add Product
             </button>
           </div>
-          <div class="card" style="padding: 0; overflow: hidden">
+          <div class="card" style="padding: 0; overflow-x: auto">
             <table class="inv-table">
               <thead>
                 <tr>
-                  <th>#</th>
+                  <th style="width: 50px">#</th>
                   <th style="text-align: left">Product Name</th>
-                  <th style="text-align: right">Price (Rs.)</th>
-                  <th style="text-align: center">Actions</th>
+                  <th style="text-align: right; width: 150px">Price (Rs.)</th>
+                  <th style="text-align: center; width: 80px">Actions</th>
                 </tr>
               </thead>
               <tbody id="inventoryTableBody"></tbody>
@@ -672,7 +689,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="history.js"></script>
     <script src="script.js"></script>
+    <script src="history.js"></script>
   </body>
 </html>
