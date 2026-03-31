@@ -75,20 +75,39 @@
           </div>
         </div>
         <nav class="sidebar-nav">
-          <div class="nav-item active" onclick="switchTab('pos')" id="navPos">
+          <div
+            class="nav-item active"
+            onclick="switchTab('pos')"
+            id="navPos"
+            title="Point of Sale (Ctrl+1)"
+          >
             <i class="fas fa-cash-register"></i><span>Point of Sale</span>
           </div>
-          <div class="nav-item" onclick="switchTab('history')" id="navHistory">
+          <div
+            class="nav-item"
+            onclick="switchTab('history')"
+            id="navHistory"
+            title="Invoice History (Ctrl+2)"
+          >
             <i class="fas fa-receipt"></i><span>Invoice History</span>
           </div>
           <div
             class="nav-item"
             onclick="switchTab('inventory')"
             id="navInventory"
+            title="Inventory (Ctrl+3)"
           >
             <i class="fas fa-boxes"></i><span>Inventory</span>
           </div>
         </nav>
+        <div class="sidebar-shortcuts">
+          <div class="shortcut-hint">
+            <kbd>Ctrl</kbd>+<kbd>S</kbd> Save Invoice
+          </div>
+          <div class="shortcut-hint">
+            <kbd>Ctrl</kbd>+<kbd>1/2/3</kbd> Switch Tab
+          </div>
+        </div>
         <div class="sidebar-footer">
           <div class="user-badge">
             <i class="fas fa-user-circle"></i><span id="loggedUser"></span>
@@ -106,7 +125,7 @@
           <div class="page-header">
             <div>
               <h1>New Invoice</h1>
-              <p>Create a new invoice for your customer</p>
+              <p>Create a new sales invoice</p>
             </div>
             <div class="invoice-badge">
               <span class="inv-label">INVOICE</span>
@@ -115,6 +134,7 @@
             </div>
           </div>
 
+          <!-- Customer Details -->
           <div class="card">
             <div class="card-title">
               <i class="fas fa-user-tag"></i> Customer Details
@@ -125,7 +145,7 @@
                 <input
                   type="text"
                   id="inName"
-                  placeholder="Full name or Walk-in"
+                  placeholder="Full name or Walk-in Customer"
                   class="pos-input"
                 />
               </div>
@@ -147,6 +167,7 @@
             </div>
           </div>
 
+          <!-- Accessories -->
           <div class="card">
             <div class="card-title-row">
               <div class="card-title">
@@ -159,6 +180,7 @@
             <div class="pos-acc-grid" id="accGrid"></div>
           </div>
 
+          <!-- Devices & Custom Items -->
           <div class="card">
             <div class="card-title-row">
               <div class="card-title">
@@ -175,6 +197,7 @@
             </button>
           </div>
 
+          <!-- Terms & Conditions -->
           <div class="card">
             <div class="card-title-row">
               <div class="card-title">
@@ -187,6 +210,7 @@
             <div id="termsContainer"></div>
           </div>
 
+          <!-- Billing Summary -->
           <div class="billing-summary">
             <div class="summary-lines">
               <div class="summary-row">
@@ -215,9 +239,9 @@
               <span>TOTAL PAYABLE</span>
               <span id="liveTotal">Rs. 0.00</span>
             </div>
-            <!-- CHANGED: Download button replaced with Save button -->
             <button class="pos-btn-download" onclick="saveInvoice()">
               <i class="fas fa-save"></i> Save Invoice
+              <span class="btn-shortcut">Ctrl+S</span>
             </button>
           </div>
         </div>
@@ -227,7 +251,7 @@
           <div class="page-header">
             <div>
               <h1>Invoice History</h1>
-              <p>View and manage past invoices</p>
+              <p>View, search, and manage all saved invoices</p>
             </div>
             <div
               style="
@@ -241,10 +265,13 @@
                 type="text"
                 id="historySearch"
                 class="pos-input"
-                placeholder="Search by name or invoice #..."
+                placeholder="Search by name, phone, or invoice #..."
                 oninput="searchHistory()"
-                style="width: 240px"
+                style="width: 260px"
               />
+              <button class="btn-export" onclick="exportHistoryCSV()">
+                <i class="fas fa-file-csv"></i> Export CSV
+              </button>
               <button class="btn-danger-outline" onclick="clearHistory()">
                 <i class="fas fa-trash"></i> Clear All
               </button>
@@ -259,7 +286,10 @@
           <div class="page-header">
             <div>
               <h1>Inventory</h1>
-              <p>Manage your product catalog</p>
+              <p>
+                Manage your product catalog — changes sync to the POS screen
+                instantly
+              </p>
             </div>
             <button class="btn-primary" onclick="addInventoryItem()">
               <i class="fas fa-plus"></i> Add Product
@@ -278,6 +308,11 @@
               <tbody id="inventoryTableBody"></tbody>
             </table>
           </div>
+          <p class="inv-hint">
+            <i class="fas fa-info-circle"></i> Click on any name or price to
+            edit it inline. Changes sync to the POS accessories grid
+            automatically.
+          </p>
         </div>
       </div>
     </div>
@@ -314,7 +349,7 @@
       </div>
     </div>
 
-    <!-- PDF INVOICE TEMPLATE -->
+    <!-- HIDDEN PDF INVOICE TEMPLATE -->
     <div id="invoice-premium">
       <div class="invoice-pdf">
         <div class="invoice-card">
@@ -383,10 +418,8 @@
                   <span>Sub Total</span><span id="pdfSubTotal">Rs. 0.00</span>
                 </div>
                 <div class="pdf-total-row">
-                  <span>Discount</span
-                  ><span id="pdfDiscount" style="color: #ef4444"
-                    >-Rs. 0.00</span
-                  >
+                  <span>Discount</span>
+                  <span id="pdfDiscount" style="color: #ef4444">-Rs. 0.00</span>
                 </div>
                 <div class="pdf-total-row pdf-grand-total">
                   <span>Grand Total</span
@@ -412,7 +445,7 @@
       </div>
     </div>
 
-    <!-- Toast -->
+    <!-- Toast notification -->
     <div id="toast" class="toast"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
