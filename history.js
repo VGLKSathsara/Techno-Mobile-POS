@@ -1,4 +1,4 @@
-// history.js — Invoice History v3.1 - Fully Fixed
+// history.js — Invoice History v3.3 - Improved Payment Modal UI
 
 // ─── CHART STATE ─────────────────────────────────────────────────────────────
 let _chartMode = 'weekly'
@@ -390,8 +390,7 @@ window.viewInvoice = function (index) {
       inv.date || new Date().toLocaleDateString()
     document.getElementById('pdfItemsBody').innerHTML =
       inv.itemsHTML ||
-      '新闻报道<td colspan="4" style="text-align:center;padding:20px">No items found</td>\
-      </tr>'
+      '<tr><td colspan="4" style="text-align:center;padding:20px">No items found</td></tr>'
     document.getElementById('pdfSubTotal').innerText =
       `Rs. ${_fmt(inv.subtotal || 0)}`
     document.getElementById('pdfDiscount').innerText =
@@ -583,7 +582,7 @@ window.shareWhatsApp = function (index) {
   )
 }
 
-// ─── PAYMENT MODAL ────────────────────────────────────────────────────────────
+// ─── PAYMENT MODAL - IMPROVED UI ─────────────────────────────────────────────
 window.openPaymentModal = function (index) {
   const history = JSON.parse(
     localStorage.getItem('techno_invoice_history') || '[]',
@@ -595,6 +594,7 @@ window.openPaymentModal = function (index) {
   const paid = _paidAmount(inv)
   const bal = _balanceDue(inv)
 
+  // Update modal info
   document.getElementById('pmInvoiceNo').innerText = inv.invoiceNo || 'N/A'
   document.getElementById('pmCustomerName').innerText =
     inv.customerName || 'Walk-in Customer'
@@ -602,29 +602,105 @@ window.openPaymentModal = function (index) {
   document.getElementById('pmPaid').innerText = `Rs. ${_fmt(paid)}`
   document.getElementById('pmBalance').innerText = `Rs. ${_fmt(bal)}`
 
-  document.getElementById('pmAmount').value = bal > 0 ? bal : ''
+  // Clear and set amount input
+  const amountInput = document.getElementById('pmAmount')
+  if (amountInput) {
+    amountInput.value = ''
+    amountInput.placeholder =
+      bal > 0 ? `Enter amount (max Rs. ${_fmt(bal)})` : 'No balance due'
+    amountInput.max = bal
+    amountInput.min = 0
+    amountInput.step = 1
+  }
+
   document.getElementById('pmModalIndex').value = index
 
-  document
-    .querySelectorAll('.pm-status-btn')
-    .forEach((b) => b.classList.toggle('active', b.dataset.status === s))
+  // Update status buttons UI
+  document.querySelectorAll('.pm-status-btn').forEach((btn) => {
+    const status = btn.dataset.status
+    btn.classList.remove('active')
+    if (status === s) {
+      btn.classList.add('active')
+    }
+  })
 
+  // Show/hide amount input row
   const amtRow = document.getElementById('pmAmountRow')
-  if (amtRow) amtRow.style.display = s === 'pending' ? 'flex' : 'none'
+  if (amtRow) {
+    amtRow.style.display = s === 'pending' && bal > 0 ? 'flex' : 'none'
+  }
+
+  // Update hint text
+  const hintEl = document.querySelector('.pm-hint')
+  if (hintEl && bal > 0 && s === 'pending') {
+    hintEl.innerHTML = `<i class="fas fa-info-circle" style="color: var(--primary)"></i> 
+      Current balance: Rs. ${_fmt(bal)}. Enter amount to pay now.`
+    hintEl.style.display = 'flex'
+  } else if (hintEl) {
+    hintEl.innerHTML = `<i class="fas fa-check-circle" style="color: var(--secondary)"></i> 
+      No balance remaining.`
+    hintEl.style.display = 'flex'
+  }
 
   document.getElementById('paymentModal').style.display = 'flex'
 }
 
 window.closePaymentModal = function () {
   document.getElementById('paymentModal').style.display = 'none'
+  const amountInput = document.getElementById('pmAmount')
+  if (amountInput) {
+    amountInput.value = ''
+  }
 }
 
 window.pmSetStatus = function (status) {
-  document
-    .querySelectorAll('.pm-status-btn')
-    .forEach((b) => b.classList.toggle('active', b.dataset.status === status))
+  // Update active button UI
+  document.querySelectorAll('.pm-status-btn').forEach((btn) => {
+    btn.classList.remove('active')
+    if (btn.dataset.status === status) {
+      btn.classList.add('active')
+    }
+  })
+
   const amtRow = document.getElementById('pmAmountRow')
-  if (amtRow) amtRow.style.display = status === 'pending' ? 'flex' : 'none'
+  const amountInput = document.getElementById('pmAmount')
+  const hintEl = document.querySelector('.pm-hint')
+  const index = parseInt(document.getElementById('pmModalIndex').value)
+  const history = JSON.parse(
+    localStorage.getItem('techno_invoice_history') || '[]',
+  )
+  const inv = history[index]
+
+  if (amtRow && inv) {
+    const bal = _balanceDue(inv)
+
+    if (status === 'pending' && bal > 0) {
+      amtRow.style.display = 'flex'
+      if (amountInput) {
+        amountInput.placeholder = `Enter amount (max Rs. ${_fmt(bal)})`
+        amountInput.max = bal
+        amountInput.value = ''
+      }
+      if (hintEl) {
+        hintEl.innerHTML = `<i class="fas fa-info-circle" style="color: var(--primary)"></i> 
+          Current balance: Rs. ${_fmt(bal)}. Enter amount to pay now.`
+      }
+    } else if (status === 'paid') {
+      amtRow.style.display = 'none'
+      if (hintEl) {
+        hintEl.innerHTML = `<i class="fas fa-check-circle" style="color: var(--secondary)"></i> 
+          Invoice will be marked as paid in full.`
+      }
+    } else if (status === 'cancelled') {
+      amtRow.style.display = 'none'
+      if (hintEl) {
+        hintEl.innerHTML = `<i class="fas fa-times-circle" style="color: var(--danger)"></i> 
+          Invoice will be cancelled. This action cannot be undone.`
+      }
+    } else {
+      amtRow.style.display = 'none'
+    }
+  }
 }
 
 window.savePayment = function () {
@@ -633,48 +709,68 @@ window.savePayment = function () {
     localStorage.getItem('techno_invoice_history') || '[]',
   )
   const inv = history[index]
-  if (!inv) return
+  if (!inv) {
+    showToast('Invoice not found', 'error')
+    return
+  }
 
   const activeBtn = document.querySelector('.pm-status-btn.active')
-  const newStatus = activeBtn ? activeBtn.dataset.status : 'paid'
+  const newStatus = activeBtn ? activeBtn.dataset.status : 'pending'
   const amtInput = parseFloat(document.getElementById('pmAmount').value) || 0
+
+  const currentPaid = inv.paidAmount || 0
+  const totalAmount = inv.total || 0
+  const remainingBalance = totalAmount - currentPaid
 
   if (newStatus === 'paid') {
     inv.status = 'paid'
-    inv.paidAmount = inv.total || 0
+    inv.paidAmount = totalAmount
+    showToast('✅ Invoice marked as Paid in Full!', 'success')
   } else if (newStatus === 'cancelled') {
     inv.status = 'cancelled'
-  } else {
-    if (amtInput < 0) {
-      showToast('Amount cannot be negative', 'error')
-      return
-    }
-    const currentPaid = inv.paidAmount || 0
-    const remaining = (inv.total || 0) - currentPaid
-    if (amtInput > remaining + 0.01) {
-      showToast('Amount exceeds balance due', 'error')
+    showToast('❌ Invoice cancelled', 'success')
+  } else if (newStatus === 'pending') {
+    if (amtInput <= 0) {
+      showToast('Please enter a valid payment amount', 'error')
       return
     }
 
-    const newPaid = parseFloat((currentPaid + amtInput).toFixed(2))
-    inv.paidAmount = newPaid
-    inv.status = newPaid >= (inv.total || 0) ? 'paid' : 'pending'
+    if (amtInput > remainingBalance + 0.01) {
+      showToast(
+        `Amount exceeds remaining balance of Rs. ${_fmt(remainingBalance)}`,
+        'error',
+      )
+      return
+    }
+
+    const newPaidAmount = currentPaid + amtInput
+    inv.paidAmount = parseFloat(newPaidAmount.toFixed(2))
+
+    if (inv.paidAmount >= totalAmount - 0.01) {
+      inv.status = 'paid'
+      inv.paidAmount = totalAmount
+      showToast(
+        `✅ Payment recorded! Invoice is now fully paid. Total paid: Rs. ${_fmt(inv.paidAmount)}`,
+        'success',
+      )
+    } else {
+      inv.status = 'pending'
+      const newBalance = totalAmount - inv.paidAmount
+      showToast(
+        `⏳ Payment of Rs. ${_fmt(amtInput)} recorded. Remaining balance: Rs. ${_fmt(newBalance)}`,
+        'success',
+      )
+    }
   }
 
   inv.lastPaymentAt = new Date().toISOString()
+  inv.lastPaymentAmount = amtInput
+
   history[index] = inv
   localStorage.setItem('techno_invoice_history', JSON.stringify(history))
+
   closePaymentModal()
   displayHistory()
-
-  const msg =
-    inv.status === 'paid'
-      ? '✅ Marked as Paid in Full!'
-      : inv.status === 'cancelled'
-        ? '❌ Invoice cancelled'
-        : `⏳ Rs. ${_fmt(amtInput)} payment recorded`
-
-  showToast(msg, 'success')
 }
 
 // ─── DELETE ───────────────────────────────────────────────────────────────────

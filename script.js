@@ -1,4 +1,4 @@
-// script.js — Techno Mobile POS v3.0 - Fully Fixed
+// script.js — Techno Mobile POS v3.0 - With Payment Field
 
 const STORAGE_KEYS = {
   INVOICE_HISTORY: 'techno_invoice_history',
@@ -31,6 +31,12 @@ const defaultTerms = [
   },
   { id: 'term4', text: 'No refunds after 7 days of purchase', selected: false },
 ]
+
+// Global variables for tracking
+let _currentSubtotal = 0
+let _currentDiscount = 0
+let _currentPayment = 0
+let _currentTotal = 0
 
 // ---------- INIT ----------
 if (!localStorage.getItem(STORAGE_KEYS.INVENTORY))
@@ -157,6 +163,8 @@ function initializePOS() {
 
   document.getElementById('inNo').innerText = generateInvoiceNumber()
   document.getElementById('inDiscount').value = 0
+  document.getElementById('inPayment').value = 0
+  document.getElementById('invoiceStatus').value = 'pending'
 
   displayTerms()
   recalc()
@@ -299,7 +307,7 @@ function saveInventoryToStorage() {
   renderInventoryTab()
 }
 
-// ---------- DEVICES - FIXED ----------
+// ---------- DEVICES ----------
 window.addDevice = function () {
   const deviceArea = document.getElementById('deviceArea')
   if (!deviceArea) return
@@ -335,7 +343,7 @@ window.removeDevice = function (btn) {
   }
 }
 
-// ---------- RECALC ----------
+// ---------- RECALC WITH PAYMENT ----------
 window.recalc = function () {
   let sub = 0
   document.querySelectorAll('.pos-acc-card').forEach((card) => {
@@ -350,8 +358,19 @@ window.recalc = function () {
     const price = Number(row.querySelector('.d-price').value) || 0
     sub += qty * price
   })
+
+  _currentSubtotal = sub
   const discount = parseFloat(document.getElementById('inDiscount').value) || 0
+  _currentDiscount = discount
   const total = Math.max(0, sub - discount)
+  _currentTotal = total
+
+  // Get payment amount
+  let payment = parseFloat(document.getElementById('inPayment').value) || 0
+  if (payment > total) payment = total
+  _currentPayment = payment
+
+  const balance = total - payment
 
   const fmt = (n) =>
     'Rs. ' +
@@ -359,9 +378,29 @@ window.recalc = function () {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })
+
   document.getElementById('liveSubtotal').innerText = fmt(sub)
   document.getElementById('liveDiscount').innerText = '- ' + fmt(discount)
   document.getElementById('liveTotal').innerText = fmt(total)
+  document.getElementById('livePayment').innerText = fmt(payment)
+  document.getElementById('liveBalance').innerText = fmt(balance)
+
+  // Auto-update status based on payment
+  const statusSelect = document.getElementById('invoiceStatus')
+  if (statusSelect) {
+    if (payment >= total && total > 0) {
+      statusSelect.value = 'paid'
+    } else if (payment > 0) {
+      statusSelect.value = 'pending'
+    } else {
+      statusSelect.value = 'pending'
+    }
+  }
+
+  // Update payment input if it was capped
+  if (payment !== parseFloat(document.getElementById('inPayment').value)) {
+    document.getElementById('inPayment').value = payment
+  }
 }
 
 window.applyDiscount = function () {
@@ -371,6 +410,46 @@ window.applyDiscount = function () {
   discountInput.value = discount
   recalc()
   showToast('Discount applied', 'success')
+}
+
+// ---------- PAYMENT FUNCTIONS ----------
+window.updatePayment = function () {
+  const paymentInput = document.getElementById('inPayment')
+  let payment = parseFloat(paymentInput.value) || 0
+  const total = _currentTotal
+
+  if (payment > total) {
+    payment = total
+    paymentInput.value = payment
+  }
+  if (payment < 0) {
+    payment = 0
+    paymentInput.value = 0
+  }
+
+  recalc()
+}
+
+window.setFullPayment = function () {
+  const total = _currentTotal
+  document.getElementById('inPayment').value = total
+  recalc()
+  showToast('Full payment set', 'success')
+}
+
+window.updatePaymentStatus = function () {
+  const statusSelect = document.getElementById('invoiceStatus')
+  const status = statusSelect.value
+  const total = _currentTotal
+  const paymentInput = document.getElementById('inPayment')
+  let payment = parseFloat(paymentInput.value) || 0
+
+  if (status === 'paid') {
+    payment = total
+    paymentInput.value = payment
+    recalc()
+    showToast('Invoice marked as paid in full', 'success')
+  }
 }
 
 // ---------- TAB SWITCH ----------
@@ -401,14 +480,14 @@ function renderInventoryTab() {
   tbody.innerHTML = inventory
     .map(
       (item, i) => `
-     <tr>
-      <td style="color:var(--gray);font-size:12px;width:50px;font-weight:700">${i + 1}</td>
-      <td><input class="inv-name-input" value="${item.n.replace(/"/g, '&quot;')}" onchange="updateInventoryItem(${i},'n',this.value)" placeholder="Product name"></td>
-      <td style="text-align:right"><input class="inv-price-input" type="number" value="${item.p}" min="0" onchange="updateInventoryItem(${i},'p',this.value)"></td>
-      <td style="text-align:center">
-        <button class="inv-del-btn" onclick="deleteInventoryItem(${i})" title="Delete"><i class="fas fa-trash"></i></button>
-      </td>
-     </tr>
+      <tr>
+        <td style="color:var(--gray);font-size:12px;width:50px;font-weight:700">${i + 1}</td>
+        <td><input class="inv-name-input" value="${item.n.replace(/"/g, '&quot;')}" onchange="updateInventoryItem(${i},'n',this.value)" placeholder="Product name"></td>
+        <td style="text-align:right"><input class="inv-price-input" type="number" value="${item.p}" min="0" onchange="updateInventoryItem(${i},'p',this.value)"></td>
+        <td style="text-align:center">
+          <button class="inv-del-btn" onclick="deleteInventoryItem(${i})" title="Delete"><i class="fas fa-trash"></i></button>
+        </td>
+      </tr>
   `,
     )
     .join('')
@@ -454,7 +533,7 @@ function syncInventoryToAccGrid() {
   loadInventory().forEach((item) => addAcc(item.n, item.p, false))
 }
 
-// ---------- SAVE INVOICE ----------
+// ---------- SAVE INVOICE WITH PAYMENT ----------
 window.saveInvoice = function () {
   const hasAccessories =
     document.querySelectorAll('.pos-acc-card .pos-check:checked').length > 0
@@ -473,6 +552,9 @@ window.saveInvoice = function () {
   const customerPhone =
     document.getElementById('inPhone').value.trim() || 'Not Provided'
   const discount = parseFloat(document.getElementById('inDiscount').value) || 0
+  const paymentReceived =
+    parseFloat(document.getElementById('inPayment').value) || 0
+  const status = document.getElementById('invoiceStatus').value
   const dateInput = document.getElementById('inDate').value
 
   let formattedDate
@@ -536,6 +618,10 @@ window.saveInvoice = function () {
     return
   }
 
+  const totalAmount = subtotal - discount
+  const finalPaidAmount =
+    status === 'paid' ? totalAmount : Math.min(paymentReceived, totalAmount)
+
   const history = JSON.parse(
     localStorage.getItem(STORAGE_KEYS.INVOICE_HISTORY) || '[]',
   )
@@ -544,12 +630,12 @@ window.saveInvoice = function () {
     customerName,
     phone: customerPhone,
     date: formattedDate,
-    total: subtotal - discount,
+    total: totalAmount,
     itemsHTML,
     subtotal,
     discount,
-    status: 'paid',
-    paidAmount: subtotal - discount,
+    status: status,
+    paidAmount: finalPaidAmount,
     savedAt: new Date().toISOString(),
   })
   localStorage.setItem(STORAGE_KEYS.INVOICE_HISTORY, JSON.stringify(history))
@@ -557,10 +643,13 @@ window.saveInvoice = function () {
   document.getElementById('saveSuccessInvNo').innerText = invoiceNo
   document.getElementById('saveSuccessOverlay').style.display = 'flex'
 
+  // Reset form
   document.getElementById('inNo').innerText = generateInvoiceNumber()
   document.getElementById('inName').value = ''
   document.getElementById('inPhone').value = ''
   document.getElementById('inDiscount').value = 0
+  document.getElementById('inPayment').value = 0
+  document.getElementById('invoiceStatus').value = 'pending'
   document.getElementById('inDate').valueAsDate = new Date()
   document.querySelectorAll('.pos-acc-card .pos-check').forEach((cb) => {
     cb.checked = false
