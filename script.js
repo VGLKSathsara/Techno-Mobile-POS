@@ -669,55 +669,28 @@ window.generatePDFWithSettings = function (filename) {
   const element = document.getElementById('invoice-premium')
   if (!element) return
 
-  if (typeof html2pdf === 'undefined') {
-    alert('PDF library not loaded. Please refresh the page.')
-    return
-  }
-
-  // ── Mobile PDF fix ──────────────────────────────────────────────────────────
-  // On mobile, html2canvas captures at the device's narrow viewport width,
-  // causing columns to collapse and layout to break.
-  // Fix: lock the element to exactly 794px (A4 at 96dpi) before capture,
-  // then restore original styles afterward.
-  const A4_PX = 794
-  const prevStyles = {
-    position: element.style.position,
-    left: element.style.left,
-    top: element.style.top,
-    width: element.style.width,
-    minWidth: element.style.minWidth,
-    maxWidth: element.style.maxWidth,
-    visibility: element.style.visibility,
-    display: element.style.display,
-    transform: element.style.transform,
-  }
-
-  element.style.position = 'fixed'
-  element.style.left = '-9999px'
-  element.style.top = '0'
-  element.style.width = A4_PX + 'px'
-  element.style.minWidth = A4_PX + 'px'
-  element.style.maxWidth = A4_PX + 'px'
+  element.style.position = 'static'
+  element.style.left = '0'
   element.style.display = 'block'
   element.style.visibility = 'visible'
-  element.style.transform = 'none'
-  // ────────────────────────────────────────────────────────────────────────────
+
+  if (typeof html2pdf === 'undefined') {
+    alert('PDF library not loaded. Please refresh the page.')
+    element.style.position = 'absolute'
+    element.style.left = '-9999px'
+    return
+  }
 
   const opt = {
     margin: [0.3, 0.3, 0.3, 0.3],
     filename: `TM_${filename}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
+    image: { type: 'jpeg', quality: 0.95 },
     html2canvas: {
       scale: 2,
       letterRendering: true,
       useCORS: true,
       logging: false,
       backgroundColor: '#ffffff',
-      // Force render at A4 desktop width regardless of actual screen/viewport
-      windowWidth: A4_PX,
-      windowHeight: 1123, // A4 height at 96dpi
-      scrollX: 0,
-      scrollY: 0,
     },
     jsPDF: {
       unit: 'mm',
@@ -728,29 +701,20 @@ window.generatePDFWithSettings = function (filename) {
     pagebreak: { mode: ['css', 'legacy'], avoid: 'tr' },
   }
 
-  const restoreElement = () => {
-    element.style.position = prevStyles.position || 'absolute'
-    element.style.left = prevStyles.left || '-9999px'
-    element.style.top = prevStyles.top || '0'
-    element.style.width = prevStyles.width || '210mm'
-    element.style.minWidth = prevStyles.minWidth || ''
-    element.style.maxWidth = prevStyles.maxWidth || ''
-    element.style.visibility = prevStyles.visibility || 'hidden'
-    element.style.display = prevStyles.display || 'block'
-    element.style.transform = prevStyles.transform || ''
-  }
-
   html2pdf()
     .set(opt)
     .from(element)
     .save()
     .then(() => {
-      restoreElement()
+      element.style.position = 'absolute'
+      element.style.left = '-9999px'
+      element.style.visibility = 'hidden'
       showToast('Invoice downloaded!', 'success')
     })
     .catch((err) => {
       console.error('PDF error:', err)
-      restoreElement()
+      element.style.position = 'absolute'
+      element.style.left = '-9999px'
       showToast('PDF generation failed. Try again.', 'error')
     })
 }
