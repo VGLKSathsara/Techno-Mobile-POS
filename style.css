@@ -2070,7 +2070,10 @@ kbd {
 .pdf-table-container {
   width: 100%;
   margin-bottom: 22px;
-  overflow-x: auto;
+  /* overflow-x:auto clips the table during html2canvas capture on mobile.
+     The element is always rendered at a fixed 794px desktop width, so
+     horizontal scrolling is never needed inside the PDF template. */
+  overflow-x: visible;
 }
 
 .pdf-table {
