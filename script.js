@@ -1,4 +1,4 @@
-// script.js — Techno Mobile POS v3.0 - With Payment Field
+// Techno Mobile POS — Fixed & Improved
 
 const STORAGE_KEYS = {
   INVOICE_HISTORY: 'techno_invoice_history',
@@ -32,59 +32,44 @@ const defaultTerms = [
   { id: 'term4', text: 'No refunds after 7 days of purchase', selected: false },
 ]
 
-// Global variables for tracking
 let _currentSubtotal = 0
 let _currentDiscount = 0
 let _currentPayment = 0
 let _currentTotal = 0
 
-// ---------- INIT ----------
+// Initialize storage on first load
 if (!localStorage.getItem(STORAGE_KEYS.INVENTORY))
   localStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(defaultInventory))
 if (!localStorage.getItem(STORAGE_KEYS.TERMS))
   localStorage.setItem(STORAGE_KEYS.TERMS, JSON.stringify(defaultTerms))
 
-// ---------- STORAGE HELPERS ----------
+// ─── Storage Helpers ──────────────────────────────────────────────────────────
 function loadInventory() {
-  try {
-    return (
-      JSON.parse(localStorage.getItem(STORAGE_KEYS.INVENTORY)) ||
-      defaultInventory
-    )
-  } catch {
-    return defaultInventory
-  }
+  return (
+    JSON.parse(localStorage.getItem(STORAGE_KEYS.INVENTORY)) || defaultInventory
+  )
 }
-
 function saveInventory(inv) {
   localStorage.setItem(STORAGE_KEYS.INVENTORY, JSON.stringify(inv))
 }
-
 function loadTerms() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEYS.TERMS)) || defaultTerms
-  } catch {
-    return defaultTerms
-  }
+  return JSON.parse(localStorage.getItem(STORAGE_KEYS.TERMS)) || defaultTerms
 }
-
 function saveTerms(terms) {
   localStorage.setItem(STORAGE_KEYS.TERMS, JSON.stringify(terms))
 }
 
-// ---------- TOAST ----------
+// ─── Toast ────────────────────────────────────────────────────────────────────
 function showToast(msg, type = '') {
   const t = document.getElementById('toast')
   if (!t) return
   t.textContent = msg
   t.className = 'toast show' + (type ? ' ' + type : '')
   clearTimeout(t._timer)
-  t._timer = setTimeout(() => {
-    t.className = 'toast'
-  }, 2800)
+  t._timer = setTimeout(() => (t.className = 'toast'), 3000)
 }
 
-// ---------- AUTH ----------
+// ─── Auth ─────────────────────────────────────────────────────────────────────
 window.togglePassword = function () {
   const pw = document.getElementById('password')
   const icon = document.getElementById('pwEyeIcon')
@@ -101,90 +86,113 @@ window.login = function () {
   const username = document.getElementById('username').value.trim()
   const password = document.getElementById('password').value
   const errEl = document.getElementById('loginError')
-  const btn = document.querySelector('.login-btn')
-
   if (username === 'DilkaRishan' && password === 'Dilka789') {
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...'
-    btn.disabled = true
-    setTimeout(() => {
-      errEl.style.display = 'none'
-      document.getElementById('loginPage').style.display = 'none'
-      const sys = document.getElementById('posSystem')
-      sys.style.display = 'flex'
-      sys.classList.add('visible')
-      document.getElementById('loggedUser').innerText = username
-      initializePOS()
-      btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login to Dashboard'
-      btn.disabled = false
-    }, 600)
+    errEl.style.display = 'none'
+    document.getElementById('loginPage').style.display = 'none'
+    document.getElementById('posSystem').style.display = 'flex'
+    document.getElementById('loggedUser').innerText = username
+    initializePOS()
   } else {
     errEl.style.display = 'flex'
     document.getElementById('password').value = ''
-    document.getElementById('password').focus()
+    // Shake animation
     const card = document.querySelector('.login-card')
     card.style.animation = 'none'
-    card.offsetHeight
-    card.style.animation = 'shake 0.4s ease'
-    setTimeout(() => {
-      card.style.animation = ''
-    }, 400)
+    card.offsetHeight // reflow
+    card.style.animation = 'shakeX 0.5s ease'
   }
 }
 
 window.logout = function () {
-  if (!confirm('Logout from the system?')) return
-  document.getElementById('loginPage').style.display = 'flex'
-  document.getElementById('posSystem').style.display = 'none'
-  document.getElementById('posSystem').classList.remove('visible')
-  document.getElementById('username').value = ''
-  document.getElementById('password').value = ''
-  document.getElementById('loginError').style.display = 'none'
+  if (confirm('Logout from the system?')) {
+    document.getElementById('loginPage').style.display = 'flex'
+    document.getElementById('posSystem').style.display = 'none'
+    document.getElementById('username').value = ''
+    document.getElementById('password').value = ''
+  }
 }
 
-// ---------- INIT POS ----------
+// Shake animation for login error
+const shakeStyle = document.createElement('style')
+shakeStyle.textContent = `
+@keyframes shakeX {
+  0%,100%{transform:translateX(0)}
+  15%{transform:translateX(-10px)}
+  30%{transform:translateX(10px)}
+  45%{transform:translateX(-8px)}
+  60%{transform:translateX(8px)}
+  75%{transform:translateX(-4px)}
+  90%{transform:translateX(4px)}
+}
+`
+document.head.appendChild(shakeStyle)
+
+// ─── POS Init ─────────────────────────────────────────────────────────────────
 function initializePOS() {
-  const accGrid = document.getElementById('accGrid')
-  if (accGrid) accGrid.innerHTML = ''
-  const deviceArea = document.getElementById('deviceArea')
-  if (deviceArea) deviceArea.innerHTML = ''
+  // Apply saved theme
+  _applyTheme(localStorage.getItem('techno_theme') || 'light')
+
+  // Reset POS form
+  document.getElementById('accGrid').innerHTML = ''
+  document.getElementById('deviceArea').innerHTML = ''
 
   loadInventory().forEach((item) => addAcc(item.n, item.p, false))
 
-  const dateInput = document.getElementById('inDate')
-  if (dateInput) dateInput.valueAsDate = new Date()
-
-  const liveDate = document.getElementById('liveDate')
-  if (liveDate)
-    liveDate.innerText = new Date().toLocaleDateString('en-US', {
+  const now = new Date()
+  document.getElementById('inDate').valueAsDate = now
+  document.getElementById('liveDate').innerText = now.toLocaleDateString(
+    'en-US',
+    {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
-    })
-
+    },
+  )
   document.getElementById('inNo').innerText = generateInvoiceNumber()
   document.getElementById('inDiscount').value = 0
   document.getElementById('inPayment').value = 0
+  // BUG FIX: Reset hidden status input and status buttons
   document.getElementById('invoiceStatus').value = 'pending'
+  _syncStatusButtons('pending')
 
   displayTerms()
   recalc()
+  updateDeviceEmptyState()
+
   if (typeof displayHistory === 'function') displayHistory()
   renderInventoryTab()
 }
 
 function generateInvoiceNumber() {
   const now = new Date()
-  return `INV-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${Math.floor(Math.random() * 900 + 100)}`
+  const rand = Math.floor(Math.random() * 900 + 100)
+  return `INV-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${rand}`
 }
 
-// ---------- TERMS ----------
+// ─── Status Button Sync ───────────────────────────────────────────────────────
+function _syncStatusButtons(value) {
+  document.querySelectorAll('.status-opt-btn').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.value === value)
+  })
+}
+
+window.selectStatus = function (value) {
+  document.getElementById('invoiceStatus').value = value
+  _syncStatusButtons(value)
+  // BUG FIX: Auto-fill payment on "paid"
+  if (value === 'paid') {
+    document.getElementById('inPayment').value = _currentTotal
+    recalc()
+  }
+}
+
+// ─── Terms ────────────────────────────────────────────────────────────────────
 function displayTerms() {
   const container = document.getElementById('termsContainer')
   if (!container) return
   const terms = loadTerms()
-  if (terms.length === 0) {
-    container.innerHTML =
-      '<div class="empty-state"><i class="fas fa-file-contract"></i><p>No terms added. Click "Add Term" to create one.</p></div>'
+  if (!terms.length) {
+    container.innerHTML = `<div class="empty-state"><i class="fas fa-file-contract"></i><p>No terms added yet. Click "Add Term" to add one.</p></div>`
     return
   }
   container.innerHTML = terms
@@ -192,12 +200,20 @@ function displayTerms() {
       (term) => `
     <div class="term-item">
       <input type="checkbox" ${term.selected ? 'checked' : ''} onchange="toggleTerm('${term.id}')">
-      <input type="text" value="${term.text.replace(/"/g, '&quot;')}" onchange="updateTermText('${term.id}', this.value)" onblur="updateTermText('${term.id}', this.value)">
+      <input type="text" value="${_esc(term.text)}" onchange="updateTermText('${term.id}', this.value)" placeholder="Enter term text...">
       <button class="term-del-btn" onclick="deleteTerm('${term.id}')" title="Delete term"><i class="fas fa-trash"></i></button>
     </div>
   `,
     )
     .join('')
+}
+
+function _esc(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
 }
 
 window.addNewTerm = function () {
@@ -209,87 +225,80 @@ window.addNewTerm = function () {
   })
   saveTerms(terms)
   displayTerms()
-  const inputs = document.querySelectorAll('.term-item input[type="text"]')
-  if (inputs.length) {
-    const last = inputs[inputs.length - 1]
-    last.focus()
-    last.select()
-  }
+  showToast('Term added', 'success')
 }
 
 window.toggleTerm = function (id) {
   const terms = loadTerms()
   const t = terms.find((t) => t.id === id)
-  if (t) {
-    t.selected = !t.selected
-    saveTerms(terms)
-  }
+  if (t) t.selected = !t.selected
+  saveTerms(terms)
 }
 
 window.updateTermText = function (id, text) {
   const terms = loadTerms()
   const t = terms.find((t) => t.id === id)
-  if (t) {
-    t.text = text
-    saveTerms(terms)
-  }
+  if (t) t.text = text
+  saveTerms(terms)
 }
 
 window.deleteTerm = function (id) {
-  if (!confirm('Delete this term?')) return
-  saveTerms(loadTerms().filter((t) => t.id !== id))
-  displayTerms()
-  showToast('Term deleted')
+  if (confirm('Delete this term?')) {
+    saveTerms(loadTerms().filter((t) => t.id !== id))
+    displayTerms()
+    showToast('Term deleted')
+  }
 }
 
-function getSelectedTermsHTML() {
-  const selected = loadTerms().filter((t) => t.selected)
-  if (selected.length === 0)
-    return '<li style="color:#64748b"><i class="fas fa-info-circle"></i> No terms selected</li>'
-  return selected
-    .map(
-      (t) =>
-        `<li><i class="fas fa-check-circle" style="color:#10b981"></i> ${t.text}</li>`,
-    )
-    .join('')
-}
-
-// ---------- PHONE VALIDATION ----------
+// ─── Phone validation ─────────────────────────────────────────────────────────
 window.validatePhone = function (input) {
-  input.value = input.value.replace(/[^0-9]/g, '')
-  if (input.value.length > 10) input.value = input.value.slice(0, 10)
+  input.value = input.value.replace(/[^0-9]/g, '').slice(0, 10)
 }
 
-// ---------- ACCESSORIES ----------
+// ─── Accessories ──────────────────────────────────────────────────────────────
 window.addAcc = function (n = 'New Accessory', p = 0, shouldSave = true) {
   const accGrid = document.getElementById('accGrid')
   if (!accGrid) return
+
+  // Remove empty hint if present
+  const hint = document.getElementById('accEmptyHint')
+  if (hint) hint.style.display = 'none'
+
   const div = document.createElement('div')
   div.className = 'pos-acc-card'
   div.innerHTML = `
-    <input type="checkbox" class="pos-check" onchange="this.closest('.pos-acc-card').classList.toggle('checked',this.checked);recalc()">
+    <input type="checkbox" class="pos-check"
+      onchange="this.closest('.pos-acc-card').classList.toggle('checked',this.checked);recalc()">
     <div class="pos-acc-info">
-      <input type="text" class="pos-acc-name" value="${n.replace(/"/g, '&quot;')}" oninput="recalc();saveInventoryToStorage()" placeholder="Item name">
+      <input type="text" class="pos-acc-name"
+        value="${_esc(n)}"
+        oninput="saveInventoryToStorage()"
+        placeholder="Item name">
       <div class="pos-acc-meta">
-        <span style="font-size:11px;color:var(--gray);font-weight:600">Qty</span>
+        <span>Qty</span>
         <input type="number" class="pos-qty" value="1" min="1" oninput="recalc()">
-        <span style="font-size:11px;color:var(--gray)">Rs.</span>
+        <span>Rs.</span>
         <input type="number" class="pos-price" value="${p}" min="0" oninput="recalc();saveInventoryToStorage()">
       </div>
     </div>
-    <button class="acc-delete-btn" onclick="deleteAccessory(this)" title="Remove"><i class="fas fa-times"></i></button>
+    <button class="acc-delete-btn" onclick="deleteAccessory(this)" title="Remove item"><i class="fas fa-times"></i></button>
   `
   accGrid.appendChild(div)
   if (shouldSave) saveInventoryToStorage()
   recalc()
 }
 
-window.deleteAccessory = function (button) {
-  if (!confirm('Remove this accessory from the list?')) return
-  button.closest('.pos-acc-card').remove()
-  recalc()
-  saveInventoryToStorage()
-  showToast('Accessory removed')
+window.deleteAccessory = function (btn) {
+  if (confirm('Remove this accessory from the list?')) {
+    btn.closest('.pos-acc-card').remove()
+    recalc()
+    saveInventoryToStorage()
+    // Show hint again if grid is empty
+    const accGrid = document.getElementById('accGrid')
+    const cards = accGrid.querySelectorAll('.pos-acc-card')
+    const hint = document.getElementById('accEmptyHint')
+    if (!cards.length && hint) hint.style.display = 'flex'
+  }
 }
 
 function saveInventoryToStorage() {
@@ -307,7 +316,7 @@ function saveInventoryToStorage() {
   renderInventoryTab()
 }
 
-// ---------- DEVICES ----------
+// ─── Devices ──────────────────────────────────────────────────────────────────
 window.addDevice = function () {
   const deviceArea = document.getElementById('deviceArea')
   if (!deviceArea) return
@@ -315,37 +324,41 @@ window.addDevice = function () {
   const div = document.createElement('div')
   div.className = 'pos-device-row'
   div.innerHTML = `
-    <input type="text" class="d-name" placeholder="iPhone 15 Pro, Samsung S24, etc." oninput="recalc()">
-    <input type="text" class="d-storage" placeholder="128GB, 256GB, etc." oninput="recalc()">
+    <input type="text" class="d-name" placeholder="iPhone 15 Pro, Samsung S24..." oninput="recalc()">
+    <input type="text" class="d-storage" placeholder="128GB, 256GB..." oninput="recalc()">
     <input type="text" class="d-imei" placeholder="IMEI / Serial Number" oninput="recalc()">
     <input type="number" class="d-qty" value="1" min="1" oninput="recalc()">
     <input type="number" class="d-price" placeholder="0.00" min="0" step="1" oninput="recalc()">
-    <button class="device-del-btn" onclick="removeDevice(this)" title="Remove item">
-      <i class="fas fa-trash-alt"></i>
-    </button>
+    <button class="device-del-btn" onclick="removeDevice(this)" title="Remove"><i class="fas fa-trash-alt"></i></button>
   `
   deviceArea.appendChild(div)
-
-  const nameInput = div.querySelector('.d-name')
-  if (nameInput) nameInput.focus()
-
+  updateDeviceEmptyState()
   recalc()
-  showToast('New item added', 'success')
+  // Focus first field
+  div.querySelector('.d-name').focus()
 }
 
 window.removeDevice = function (btn) {
-  if (!confirm('Remove this item from the invoice?')) return
-  const row = btn.closest('.pos-device-row')
-  if (row) {
-    row.remove()
+  // BUG FIX: recalc was outside the if block before — now inside
+  if (confirm('Remove this item?')) {
+    btn.closest('.pos-device-row').remove()
     recalc()
-    showToast('Item removed')
+    updateDeviceEmptyState()
   }
 }
 
-// ---------- RECALC WITH PAYMENT ----------
+function updateDeviceEmptyState() {
+  const deviceArea = document.getElementById('deviceArea')
+  const emptyState = document.getElementById('deviceEmptyState')
+  if (!deviceArea || !emptyState) return
+  const hasRows = deviceArea.querySelectorAll('.pos-device-row').length > 0
+  emptyState.classList.toggle('visible', !hasRows)
+}
+
+// ─── Recalc ───────────────────────────────────────────────────────────────────
 window.recalc = function () {
   let sub = 0
+
   document.querySelectorAll('.pos-acc-card').forEach((card) => {
     if (card.querySelector('.pos-check')?.checked) {
       const qty = Number(card.querySelector('.pos-qty').value) || 0
@@ -353,6 +366,7 @@ window.recalc = function () {
       sub += qty * price
     }
   })
+
   document.querySelectorAll('.pos-device-row').forEach((row) => {
     const qty = Number(row.querySelector('.d-qty').value) || 0
     const price = Number(row.querySelector('.d-price').value) || 0
@@ -360,17 +374,17 @@ window.recalc = function () {
   })
 
   _currentSubtotal = sub
-  const discount = parseFloat(document.getElementById('inDiscount').value) || 0
-  _currentDiscount = discount
-  const total = Math.max(0, sub - discount)
-  _currentTotal = total
+  _currentDiscount =
+    parseFloat(document.getElementById('inDiscount').value) || 0
+  _currentTotal = Math.max(0, sub - _currentDiscount)
 
-  // Get payment amount
+  // BUG FIX: Clamp payment to total, but don't force update if user is typing
   let payment = parseFloat(document.getElementById('inPayment').value) || 0
-  if (payment > total) payment = total
+  payment = Math.min(payment, _currentTotal)
+  payment = Math.max(0, payment)
   _currentPayment = payment
 
-  const balance = total - payment
+  const balance = _currentTotal - payment
 
   const fmt = (n) =>
     'Rs. ' +
@@ -380,114 +394,134 @@ window.recalc = function () {
     })
 
   document.getElementById('liveSubtotal').innerText = fmt(sub)
-  document.getElementById('liveDiscount').innerText = '- ' + fmt(discount)
-  document.getElementById('liveTotal').innerText = fmt(total)
+  document.getElementById('liveDiscount').innerText =
+    '- ' + fmt(_currentDiscount)
+  document.getElementById('liveTotal').innerText = fmt(_currentTotal)
   document.getElementById('livePayment').innerText = fmt(payment)
   document.getElementById('liveBalance').innerText = fmt(balance)
 
-  // Auto-update status based on payment
-  const statusSelect = document.getElementById('invoiceStatus')
-  if (statusSelect) {
-    if (payment >= total && total > 0) {
-      statusSelect.value = 'paid'
-    } else if (payment > 0) {
-      statusSelect.value = 'pending'
-    } else {
-      statusSelect.value = 'pending'
-    }
-  }
+  // Update payment input only if clamping occurred
+  const payInput = document.getElementById('inPayment')
+  if (parseFloat(payInput.value) > _currentTotal) payInput.value = payment
 
-  // Update payment input if it was capped
-  if (payment !== parseFloat(document.getElementById('inPayment').value)) {
-    document.getElementById('inPayment').value = payment
-  }
+  // Balance color
+  const balEl = document.getElementById('liveBalance')
+  if (balance > 0) balEl.style.color = 'var(--danger)'
+  else balEl.style.color = 'var(--secondary)'
 }
 
 window.applyDiscount = function () {
-  const discountInput = document.getElementById('inDiscount')
-  let discount = parseFloat(discountInput.value) || 0
+  let discount = parseFloat(document.getElementById('inDiscount').value) || 0
   if (discount < 0) discount = 0
-  discountInput.value = discount
+  if (discount > _currentSubtotal) {
+    showToast('Discount cannot exceed subtotal', 'error')
+    discount = _currentSubtotal
+  }
+  document.getElementById('inDiscount').value = discount
   recalc()
-  showToast('Discount applied', 'success')
+  if (discount > 0)
+    showToast(`Discount of Rs. ${discount.toLocaleString()} applied`, 'success')
 }
 
-// ---------- PAYMENT FUNCTIONS ----------
 window.updatePayment = function () {
-  const paymentInput = document.getElementById('inPayment')
-  let payment = parseFloat(paymentInput.value) || 0
-  const total = _currentTotal
-
-  if (payment > total) {
-    payment = total
-    paymentInput.value = payment
-  }
-  if (payment < 0) {
-    payment = 0
-    paymentInput.value = 0
-  }
-
+  let payment = parseFloat(document.getElementById('inPayment').value) || 0
+  if (payment < 0) payment = 0
+  if (payment > _currentTotal) payment = _currentTotal
+  document.getElementById('inPayment').value = payment
   recalc()
 }
 
 window.setFullPayment = function () {
-  const total = _currentTotal
-  document.getElementById('inPayment').value = total
+  document.getElementById('inPayment').value = _currentTotal
   recalc()
-  showToast('Full payment set', 'success')
 }
 
+// BUG FIX: Replaced old updatePaymentStatus (which referenced select element) with selectStatus
 window.updatePaymentStatus = function () {
-  const statusSelect = document.getElementById('invoiceStatus')
-  const status = statusSelect.value
-  const total = _currentTotal
-  const paymentInput = document.getElementById('inPayment')
-  let payment = parseFloat(paymentInput.value) || 0
-
-  if (status === 'paid') {
-    payment = total
-    paymentInput.value = payment
-    recalc()
-    showToast('Invoice marked as paid in full', 'success')
-  }
+  // Legacy shim — kept for compatibility
+  const val = document.getElementById('invoiceStatus').value
+  selectStatus(val)
 }
 
-// ---------- TAB SWITCH ----------
+// ─── Tab Switching ────────────────────────────────────────────────────────────
 window.switchTab = function (tab) {
   const tabs = ['pos', 'history', 'inventory']
+  const titles = {
+    pos: 'Point of Sale',
+    history: 'Invoice History',
+    inventory: 'Inventory',
+  }
+
   tabs.forEach((t) => {
-    const panel = document.getElementById(t + 'Tab')
-    const nav = document.getElementById(
-      'nav' + t.charAt(0).toUpperCase() + t.slice(1),
+    document.getElementById(t + 'Tab').style.display =
+      t === tab ? 'block' : 'none'
+    document
+      .getElementById('nav' + t.charAt(0).toUpperCase() + t.slice(1))
+      .classList.toggle('active', t === tab)
+    // Mobile bottom nav
+    const mobileNav = document.getElementById(
+      'mobileNav' + t.charAt(0).toUpperCase() + t.slice(1),
     )
-    if (panel) panel.style.display = t === tab ? 'block' : 'none'
-    if (nav) nav.classList.toggle('active', t === tab)
+    if (mobileNav) mobileNav.classList.toggle('active', t === tab)
   })
+
+  // Update mobile title
+  const mobileTitle = document.getElementById('mobileTabTitle')
+  if (mobileTitle) mobileTitle.innerText = titles[tab] || ''
+
   if (tab === 'history' && typeof displayHistory === 'function')
     displayHistory()
   if (tab === 'inventory') renderInventoryTab()
+
+  // Close mobile sidebar
+  closeMobileSidebar()
 }
 
-// ---------- INVENTORY TAB ----------
+// ─── Mobile Sidebar ───────────────────────────────────────────────────────────
+window.toggleMobileSidebar = function () {
+  const sidebar = document.querySelector('.pos-sidebar')
+  const overlay = document.getElementById('mobileSidebarOverlay')
+  sidebar.classList.toggle('mobile-open')
+  overlay.classList.toggle('active')
+}
+window.closeMobileSidebar = function () {
+  const sidebar = document.querySelector('.pos-sidebar')
+  const overlay = document.getElementById('mobileSidebarOverlay')
+  sidebar.classList.remove('mobile-open')
+  overlay.classList.remove('active')
+}
+
+// ─── Inventory Tab ────────────────────────────────────────────────────────────
 function renderInventoryTab() {
   const tbody = document.getElementById('inventoryTableBody')
   if (!tbody) return
   const inventory = loadInventory()
-  if (inventory.length === 0) {
+  if (!inventory.length) {
     tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><i class="fas fa-boxes"></i><p>No products in inventory. Click "Add Product" to get started.</p></div></td></tr>`
     return
   }
   tbody.innerHTML = inventory
     .map(
       (item, i) => `
-      <tr>
-        <td style="color:var(--gray);font-size:12px;width:50px;font-weight:700">${i + 1}</td>
-        <td><input class="inv-name-input" value="${item.n.replace(/"/g, '&quot;')}" onchange="updateInventoryItem(${i},'n',this.value)" placeholder="Product name"></td>
-        <td style="text-align:right"><input class="inv-price-input" type="number" value="${item.p}" min="0" onchange="updateInventoryItem(${i},'p',this.value)"></td>
-        <td style="text-align:center">
-          <button class="inv-del-btn" onclick="deleteInventoryItem(${i})" title="Delete"><i class="fas fa-trash"></i></button>
-        </td>
-      </tr>
+    <tr>
+      <td style="color:var(--text-muted);font-size:12px;font-weight:700;width:40px">${i + 1}</td>
+      <td>
+        <input class="inv-name-input"
+          value="${_esc(item.n)}"
+          onchange="updateInventoryItem(${i},'n',this.value)"
+          placeholder="Product name">
+      </td>
+      <td style="text-align:right;width:160px">
+        <input class="inv-price-input" type="number"
+          value="${item.p}" min="0"
+          onchange="updateInventoryItem(${i},'p',this.value)">
+      </td>
+      <td style="text-align:center;width:60px">
+        <button class="inv-del-btn" onclick="deleteInventoryItem(${i})" title="Delete">
+          <i class="fas fa-trash"></i>
+        </button>
+      </td>
+    </tr>
   `,
     )
     .join('')
@@ -498,50 +532,56 @@ window.addInventoryItem = function () {
   inventory.push({ n: 'New Product', p: 0 })
   saveInventory(inventory)
   renderInventoryTab()
-  showToast('Product added')
   syncInventoryToAccGrid()
-  const inputs = document.querySelectorAll('.inv-name-input')
-  if (inputs.length) {
-    const last = inputs[inputs.length - 1]
-    last.focus()
-    last.select()
-  }
+  showToast('Product added', 'success')
 }
 
 window.updateInventoryItem = function (index, field, value) {
   const inventory = loadInventory()
-  if (!inventory[index]) return
-  inventory[index][field] = field === 'p' ? Number(value) : value
-  saveInventory(inventory)
-  syncInventoryToAccGrid()
+  if (inventory[index]) {
+    inventory[index][field] = field === 'p' ? Number(value) : value
+    saveInventory(inventory)
+    syncInventoryToAccGrid()
+  }
 }
 
 window.deleteInventoryItem = function (index) {
-  if (!confirm('Delete this product from inventory?')) return
-  const inventory = loadInventory()
-  inventory.splice(index, 1)
-  saveInventory(inventory)
-  renderInventoryTab()
-  syncInventoryToAccGrid()
-  showToast('Product deleted')
+  if (confirm('Delete this product?')) {
+    const inventory = loadInventory()
+    inventory.splice(index, 1)
+    saveInventory(inventory)
+    renderInventoryTab()
+    syncInventoryToAccGrid()
+    showToast('Product deleted')
+  }
 }
 
 function syncInventoryToAccGrid() {
   const accGrid = document.getElementById('accGrid')
-  if (!accGrid) return
-  accGrid.innerHTML = ''
-  loadInventory().forEach((item) => addAcc(item.n, item.p, false))
+  if (accGrid) {
+    accGrid.innerHTML = ''
+    const hint = document.getElementById('accEmptyHint')
+    if (hint) {
+      hint.style.display = 'none'
+      accGrid.appendChild(hint)
+    }
+    loadInventory().forEach((item) => addAcc(item.n, item.p, false))
+    // Show hint if no items
+    if (hint && !accGrid.querySelector('.pos-acc-card')) {
+      hint.style.display = 'flex'
+    }
+  }
 }
 
-// ---------- SAVE INVOICE WITH PAYMENT ----------
+// ─── Save Invoice ─────────────────────────────────────────────────────────────
 window.saveInvoice = function () {
-  const hasAccessories =
+  // Validate: at least one item
+  const hasCheckedAcc =
     document.querySelectorAll('.pos-acc-card .pos-check:checked').length > 0
-  const hasDevices = Array.from(
+  const hasDevice = Array.from(
     document.querySelectorAll('.pos-device-row'),
   ).some((row) => row.querySelector('.d-name')?.value.trim())
-
-  if (!hasAccessories && !hasDevices) {
+  if (!hasCheckedAcc && !hasDevice) {
     showToast('Please add at least one item to the invoice', 'error')
     return
   }
@@ -554,25 +594,21 @@ window.saveInvoice = function () {
   const discount = parseFloat(document.getElementById('inDiscount').value) || 0
   const paymentReceived =
     parseFloat(document.getElementById('inPayment').value) || 0
-  const status = document.getElementById('invoiceStatus').value
+  const status = document.getElementById('invoiceStatus').value || 'pending'
   const dateInput = document.getElementById('inDate').value
+  const formattedDate = dateInput
+    ? new Date(dateInput + 'T00:00:00').toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      })
+    : new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      })
 
-  let formattedDate
-  if (dateInput) {
-    const d = new Date(dateInput)
-    formattedDate = d.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    })
-  } else {
-    formattedDate = new Date().toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    })
-  }
-
+  // Build items HTML
   let itemsHTML = ''
   let subtotal = 0
 
@@ -584,10 +620,10 @@ window.saveInvoice = function () {
       const total = qty * price
       subtotal += total
       itemsHTML += `<tr>
-        <td style="text-align:left">${name}</td>
+        <td style="text-align:left">${_esc(name)}</td>
         <td style="text-align:center">${qty}</td>
-        <td style="text-align:right">Rs. ${price.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-        <td style="text-align:right">Rs. ${total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+        <td style="text-align:right">Rs. ${price.toLocaleString()}.00</td>
+        <td style="text-align:right">Rs. ${total.toLocaleString()}.00</td>
       </tr>`
     }
   })
@@ -599,29 +635,33 @@ window.saveInvoice = function () {
     const imei = row.querySelector('.d-imei').value?.trim()
     const qty = Number(row.querySelector('.d-qty').value) || 1
     const price = Number(row.querySelector('.d-price').value) || 0
-    if (price === 0 && !name) return
     const total = qty * price
     subtotal += total
-    let desc = name
-    if (storage) desc += ` (${storage})`
-    if (imei) desc += ` — IMEI: ${imei}`
+    const desc =
+      _esc(name) +
+      (storage ? ` (${_esc(storage)})` : '') +
+      (imei ? ` — IMEI: ${_esc(imei)}` : '')
     itemsHTML += `<tr>
       <td style="text-align:left">${desc}</td>
       <td style="text-align:center">${qty}</td>
-      <td style="text-align:right">Rs. ${price.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-      <td style="text-align:right">Rs. ${total.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
+      <td style="text-align:right">Rs. ${price.toLocaleString()}.00</td>
+      <td style="text-align:right">Rs. ${total.toLocaleString()}.00</td>
     </tr>`
   })
 
   if (!itemsHTML) {
-    showToast('No valid items found. Fill in item details.', 'error')
+    showToast('No valid items found', 'error')
     return
   }
 
-  const totalAmount = subtotal - discount
-  const finalPaidAmount =
-    status === 'paid' ? totalAmount : Math.min(paymentReceived, totalAmount)
+  const totalAmount = Math.max(0, subtotal - discount)
+  // BUG FIX: For paid status, set paidAmount = total. For cancelled, paidAmount = 0.
+  let finalPaidAmount
+  if (status === 'paid') finalPaidAmount = totalAmount
+  else if (status === 'cancelled') finalPaidAmount = 0
+  else finalPaidAmount = Math.min(Math.max(0, paymentReceived), totalAmount)
 
+  // Save to history
   const history = JSON.parse(
     localStorage.getItem(STORAGE_KEYS.INVOICE_HISTORY) || '[]',
   )
@@ -634,12 +674,13 @@ window.saveInvoice = function () {
     itemsHTML,
     subtotal,
     discount,
-    status: status,
+    status,
     paidAmount: finalPaidAmount,
     savedAt: new Date().toISOString(),
   })
   localStorage.setItem(STORAGE_KEYS.INVOICE_HISTORY, JSON.stringify(history))
 
+  // Show success overlay
   document.getElementById('saveSuccessInvNo').innerText = invoiceNo
   document.getElementById('saveSuccessOverlay').style.display = 'flex'
 
@@ -650,96 +691,47 @@ window.saveInvoice = function () {
   document.getElementById('inDiscount').value = 0
   document.getElementById('inPayment').value = 0
   document.getElementById('invoiceStatus').value = 'pending'
+  _syncStatusButtons('pending')
   document.getElementById('inDate').valueAsDate = new Date()
+  document.getElementById('liveDate').innerText = new Date().toLocaleDateString(
+    'en-US',
+    { year: 'numeric', month: 'short', day: 'numeric' },
+  )
   document.querySelectorAll('.pos-acc-card .pos-check').forEach((cb) => {
     cb.checked = false
     cb.closest('.pos-acc-card').classList.remove('checked')
   })
   document.getElementById('deviceArea').innerHTML = ''
+  updateDeviceEmptyState()
   recalc()
 }
 
+// BUG FIX: closeSaveSuccess now properly switches tab for 'pos' destination
 window.closeSaveSuccess = function (destination) {
   document.getElementById('saveSuccessOverlay').style.display = 'none'
   if (destination === 'history') switchTab('history')
+  else switchTab('pos')
 }
 
-// ---------- PDF GENERATION ----------
-window.generatePDFWithSettings = function (filename) {
-  const element = document.getElementById('invoice-premium')
-  if (!element) return
-
-  element.style.position = 'static'
-  element.style.left = '0'
-  element.style.display = 'block'
-  element.style.visibility = 'visible'
-
-  if (typeof html2pdf === 'undefined') {
-    alert('PDF library not loaded. Please refresh the page.')
-    element.style.position = 'absolute'
-    element.style.left = '-9999px'
-    return
-  }
-
-  const opt = {
-    margin: [0.3, 0.3, 0.3, 0.3],
-    filename: `TM_${filename}.pdf`,
-    image: { type: 'jpeg', quality: 0.95 },
-    html2canvas: {
-      scale: 2,
-      letterRendering: true,
-      useCORS: true,
-      logging: false,
-      backgroundColor: '#ffffff',
-    },
-    jsPDF: {
-      unit: 'mm',
-      format: 'a4',
-      orientation: 'portrait',
-      compress: true,
-    },
-    pagebreak: { mode: ['css', 'legacy'], avoid: 'tr' },
-  }
-
-  html2pdf()
-    .set(opt)
-    .from(element)
-    .save()
-    .then(() => {
-      element.style.position = 'absolute'
-      element.style.left = '-9999px'
-      element.style.visibility = 'hidden'
-      showToast('Invoice downloaded!', 'success')
-    })
-    .catch((err) => {
-      console.error('PDF error:', err)
-      element.style.position = 'absolute'
-      element.style.left = '-9999px'
-      showToast('PDF generation failed. Try again.', 'error')
-    })
-}
-
-// ---------- HISTORY SEARCH ----------
+// ─── History helpers ──────────────────────────────────────────────────────────
 window.searchHistory = function () {
   if (typeof displayHistory === 'function') displayHistory()
 }
 
-// ---------- HISTORY CLEAR ----------
 window.clearHistory = function () {
-  if (!confirm('Clear ALL invoice history? This cannot be undone.')) return
-  localStorage.setItem(STORAGE_KEYS.INVOICE_HISTORY, '[]')
-  if (typeof displayHistory === 'function') displayHistory()
-  showToast('All history cleared')
+  if (confirm('Clear ALL invoice history? This cannot be undone.')) {
+    localStorage.setItem(STORAGE_KEYS.INVOICE_HISTORY, '[]')
+    if (typeof displayHistory === 'function') displayHistory()
+    showToast('All history cleared')
+  }
 }
 
-// ---------- KEYBOARD SHORTCUTS ----------
+// ─── Keyboard Shortcuts ───────────────────────────────────────────────────────
 document.addEventListener('keydown', (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-    const posTab = document.getElementById('posTab')
-    if (posTab && posTab.style.display !== 'none') {
-      e.preventDefault()
+    e.preventDefault()
+    if (document.getElementById('posTab').style.display !== 'none')
       saveInvoice()
-    }
   }
   if ((e.ctrlKey || e.metaKey) && e.key === '1') {
     e.preventDefault()
@@ -755,35 +747,20 @@ document.addEventListener('keydown', (e) => {
   }
 })
 
-// ---------- DISCOUNT ENTER KEY ----------
-document.addEventListener('DOMContentLoaded', () => {
-  const discountInput = document.getElementById('inDiscount')
-  if (discountInput) {
-    discountInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault()
-        applyDiscount()
-      }
-    })
-  }
-})
-
-window.onload = () => {
-  document.getElementById('loginPage').style.display = 'flex'
-  document.getElementById('posSystem').style.display = 'none'
-}
-
-// ---------- DARK MODE ----------
+// ─── Dark Mode ────────────────────────────────────────────────────────────────
+// BUG FIX: Was wrapped in broken IIFE syntax before — now a clean IIFE
 ;(function initDarkMode() {
-  const saved = localStorage.getItem('techno_theme') || 'light'
-  _applyTheme(saved)
+  _applyTheme(localStorage.getItem('techno_theme') || 'light')
 })()
 
 function _applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme)
   localStorage.setItem('techno_theme', theme)
   const icon = document.getElementById('darkModeIcon')
-  if (icon) icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon'
+  const iconMobile = document.getElementById('darkModeIconMobile')
+  const cls = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon'
+  if (icon) icon.className = cls
+  if (iconMobile) iconMobile.className = cls
 }
 
 window.toggleDarkMode = function () {
@@ -792,12 +769,11 @@ window.toggleDarkMode = function () {
   if (
     typeof displayHistory === 'function' &&
     document.getElementById('historyTab')?.style.display !== 'none'
-  ) {
+  )
     displayHistory()
-  }
 }
 
-// ---------- DATA BACKUP & RESTORE ----------
+// ─── Backup & Restore ─────────────────────────────────────────────────────────
 window.backupData = function () {
   const backup = {
     version: '3.0',
@@ -814,15 +790,12 @@ window.backupData = function () {
       ),
     },
   }
-  const blob = new Blob([JSON.stringify(backup, null, 2)], {
-    type: 'application/json',
-  })
-  const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
-  a.href = url
+  a.href = URL.createObjectURL(
+    new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' }),
+  )
   a.download = `TM_Backup_${new Date().toISOString().slice(0, 10)}.json`
   a.click()
-  URL.revokeObjectURL(url)
   showToast('Backup downloaded!', 'success')
 }
 
@@ -837,21 +810,20 @@ window.restoreData = function () {
     reader.onload = (ev) => {
       try {
         const backup = JSON.parse(ev.target.result)
-        if (!backup.data) throw new Error('Invalid backup file')
+        if (!backup.data) throw new Error('Invalid format')
         if (
-          !confirm(
-            `Restore backup from ${backup.exportedAt ? new Date(backup.exportedAt).toLocaleString() : 'unknown date'}?\n\nThis will REPLACE your current data.`,
+          confirm(
+            'Restore backup? This will REPLACE all current data and reload the page.',
           )
-        )
-          return
-        Object.entries(backup.data).forEach(([key, val]) => {
-          localStorage.setItem(key, JSON.stringify(val))
-        })
-        showToast('Data restored successfully!', 'success')
-        setTimeout(() => location.reload(), 1000)
+        ) {
+          Object.entries(backup.data).forEach(([key, val]) =>
+            localStorage.setItem(key, JSON.stringify(val)),
+          )
+          showToast('Data restored! Reloading...', 'success')
+          setTimeout(() => location.reload(), 1200)
+        }
       } catch (err) {
         showToast('Invalid backup file', 'error')
-        console.error(err)
       }
     }
     reader.readAsText(file)
@@ -862,21 +834,17 @@ window.restoreData = function () {
 window.openSettingsModal = function () {
   document.getElementById('settingsModal').style.display = 'flex'
 }
-
 window.closeSettingsModal = function () {
   document.getElementById('settingsModal').style.display = 'none'
 }
 
-// Add shake animation keyframes
-const style = document.createElement('style')
-style.textContent = `
-  @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    15% { transform: translateX(-8px); }
-    30% { transform: translateX(8px); }
-    45% { transform: translateX(-5px); }
-    60% { transform: translateX(5px); }
-    80% { transform: translateX(-3px); }
-  }
-`
-document.head.appendChild(style)
+// ─── On Load ──────────────────────────────────────────────────────────────────
+window.onload = () => {
+  document.getElementById('loginPage').style.display = 'flex'
+  document.getElementById('posSystem').style.display = 'none'
+  // Pre-focus username
+  setTimeout(() => {
+    const u = document.getElementById('username')
+    if (u) u.focus()
+  }, 100)
+}

@@ -1,10 +1,9 @@
-// history.js — Invoice History v3.3 - Improved Payment Modal UI
+// history.js — Invoice History v3.0 Fixed
 
-// ─── CHART STATE ─────────────────────────────────────────────────────────────
-let _chartMode = 'weekly'
+// BUG FIX: Default chart mode matches the "active" button in HTML (daily)
+let _chartMode = 'daily'
 let _chartInstance = null
 
-// ─── MAIN DISPLAY ─────────────────────────────────────────────────────────────
 window.displayHistory = function () {
   const query = (document.getElementById('historySearch')?.value || '')
     .toLowerCase()
@@ -32,7 +31,7 @@ window.displayHistory = function () {
   _renderList(filtered, allHistory)
 }
 
-// ─── STATS ───────────────────────────────────────────────────────────────────
+// ─── Stats ────────────────────────────────────────────────────────────────────
 function _renderStats(allHistory, filtered) {
   const el = document.getElementById('historyStats')
   if (!el) return
@@ -71,23 +70,22 @@ function _renderStats(allHistory, filtered) {
     </div>
     <div class="stat-card">
       <div class="stat-label">Pending Balance</div>
-      <div class="stat-value" style="color:var(--danger);font-size:17px">
-        Rs. ${_fmt(pendingBal)}
-        ${pendingInvs.length ? `<span style="font-size:12px;font-weight:500;color:var(--gray)">&nbsp;(${pendingInvs.length})</span>` : ''}
+      <div class="stat-value" style="color:var(--danger)">
+        Rs. ${_fmt(pendingBal)}${pendingInvs.length ? `<span style="font-size:12px"> (${pendingInvs.length})</span>` : ''}
       </div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Showing</div>
-      <div class="stat-value">${filtered.length} <span style="font-size:13px;font-weight:500;color:var(--gray)">/ ${allHistory.length}</span></div>
+      <div class="stat-value">${filtered.length} <span style="font-size:14px;font-weight:500">/ ${allHistory.length}</span></div>
     </div>
   `
 }
 
-// ─── REVENUE CHART ────────────────────────────────────────────────────────────
+// ─── Chart ────────────────────────────────────────────────────────────────────
 function _renderChart(allHistory) {
   const container = document.getElementById('revenueChartContainer')
   if (!container) return
-  if (allHistory.length === 0) {
+  if (!allHistory.length) {
     container.style.display = 'none'
     return
   }
@@ -95,7 +93,6 @@ function _renderChart(allHistory) {
 
   const canvas = document.getElementById('revenueChart')
   if (!canvas) return
-  const ctx = canvas.getContext('2d')
 
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
   const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
@@ -103,12 +100,9 @@ function _renderChart(allHistory) {
 
   const { labels, paid, partial } = _buildChartData(allHistory, _chartMode)
 
-  if (_chartInstance) {
-    _chartInstance.destroy()
-    _chartInstance = null
-  }
+  if (_chartInstance) _chartInstance.destroy()
 
-  _chartInstance = new Chart(ctx, {
+  _chartInstance = new Chart(canvas, {
     type: 'bar',
     data: {
       labels,
@@ -117,10 +111,9 @@ function _renderChart(allHistory) {
           label: 'Paid',
           data: paid,
           backgroundColor: isDark
-            ? 'rgba(59,130,246,0.8)'
-            : 'rgba(37,99,235,0.75)',
-          borderRadius: 5,
-          borderSkipped: false,
+            ? 'rgba(16,185,129,0.75)'
+            : 'rgba(5,150,105,0.7)',
+          borderRadius: 6,
         },
         {
           label: 'Partial / Pending',
@@ -128,40 +121,42 @@ function _renderChart(allHistory) {
           backgroundColor: isDark
             ? 'rgba(251,191,36,0.7)'
             : 'rgba(245,158,11,0.65)',
-          borderRadius: 5,
-          borderSkipped: false,
+          borderRadius: 6,
         },
       ],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
       plugins: {
         legend: {
-          display: true,
           position: 'top',
           labels: {
             color: labelColor,
-            font: { family: 'DM Sans', size: 12 },
-            boxWidth: 12,
-            borderRadius: 4,
+            font: { family: 'Outfit', size: 12, weight: '600' },
           },
         },
-        tooltip: { callbacks: { label: (c) => ` Rs. ${_fmt(c.parsed.y)}` } },
+        tooltip: {
+          callbacks: {
+            label: (c) => ` Rs. ${_fmt(c.parsed.y)}`,
+          },
+          backgroundColor: isDark ? '#1e293b' : '#0f172a',
+          padding: 12,
+          cornerRadius: 10,
+        },
       },
       scales: {
         x: {
           stacked: true,
           grid: { display: false },
-          ticks: { color: labelColor, font: { family: 'DM Sans', size: 11 } },
+          ticks: { color: labelColor, font: { family: 'Outfit', size: 11 } },
         },
         y: {
           stacked: true,
           grid: { color: gridColor },
           ticks: {
             color: labelColor,
-            font: { family: 'Space Mono', size: 10 },
+            font: { family: 'Outfit', size: 11 },
             callback: (v) =>
               'Rs.' + (v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v),
           },
@@ -205,8 +200,10 @@ function _buildChartData(all, mode) {
     for (let i = 11; i >= 0; i--) {
       const ws = new Date(now)
       ws.setDate(ws.getDate() - ws.getDay() - i * 7)
+      ws.setHours(0, 0, 0, 0)
       const we = new Date(ws)
       we.setDate(we.getDate() + 6)
+      we.setHours(23, 59, 59, 999)
       labels.push(`Wk ${12 - i}`)
       const invs = all.filter((inv) => {
         const d = _pDate(inv.date)
@@ -224,6 +221,7 @@ function _buildChartData(all, mode) {
       )
     }
   } else {
+    // monthly
     for (let i = 11; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
       labels.push(
@@ -255,7 +253,7 @@ function _buildChartData(all, mode) {
 function _pDate(str) {
   if (!str) return null
   const d = new Date(str)
-  return isNaN(d) ? null : d
+  return isNaN(d.getTime()) ? null : d
 }
 
 window.setChartMode = function (mode) {
@@ -267,7 +265,7 @@ window.setChartMode = function (mode) {
   _renderChart(all)
 }
 
-// ─── HELPERS ─────────────────────────────────────────────────────────────────
+// ─── Formatters ───────────────────────────────────────────────────────────────
 function _fmt(n) {
   return (n || 0).toLocaleString('en-US', {
     minimumFractionDigits: 2,
@@ -276,14 +274,14 @@ function _fmt(n) {
 }
 
 function _balanceDue(inv) {
-  if ((inv.status || 'paid') === 'paid') return 0
+  if ((inv.status || 'paid') === 'paid' || inv.status === 'cancelled') return 0
   return Math.max(0, (inv.total || 0) - (inv.paidAmount || 0))
 }
 
 function _paidAmount(inv) {
-  const status = inv.status || 'paid'
-  if (status === 'paid') return inv.total || 0
-  return inv.paidAmount || 0
+  return (inv.status || 'paid') === 'paid'
+    ? inv.total || 0
+    : inv.paidAmount || 0
 }
 
 function _statusBadge(inv) {
@@ -306,66 +304,69 @@ function _esc(str) {
     .replace(/"/g, '&quot;')
 }
 
-// ─── LIST ─────────────────────────────────────────────────────────────────────
+// ─── Render List ──────────────────────────────────────────────────────────────
 function _renderList(filtered, allHistory) {
   const el = document.getElementById('historyList')
   if (!el) return
 
-  if (filtered.length === 0) {
-    el.innerHTML = `<div class="empty-state"><i class="fas fa-receipt"></i><p>No invoices found</p></div>`
+  if (!filtered.length) {
+    el.innerHTML = `<div class="empty-state"><i class="fas fa-receipt"></i><p>No invoices found. Try adjusting your search or filters.</p></div>`
     return
   }
 
   el.innerHTML = filtered
-    .map((inv, idx) => {
+    .map((inv) => {
+      // BUG FIX: Use a more reliable index lookup that won't fail on duplicate names
       const realIdx = allHistory.findIndex(
-        (h) =>
-          h.invoiceNo === inv.invoiceNo &&
-          h.customerName === inv.customerName &&
-          h.date === inv.date,
+        (h) => h.invoiceNo === inv.invoiceNo && h.savedAt === inv.savedAt,
       )
-      const s = inv.status || 'paid'
-      const bal = _balanceDue(inv)
-      const phone = inv.phone && inv.phone !== 'Not Provided' ? inv.phone : ''
-      const hasPhone = !!phone
+      // Fallback if savedAt not available (old records)
+      const idx =
+        realIdx >= 0
+          ? realIdx
+          : allHistory.findIndex(
+              (h) =>
+                h.invoiceNo === inv.invoiceNo &&
+                h.customerName === inv.customerName &&
+                h.date === inv.date,
+            )
 
-      return `
-    <div class="history-item ${s}" id="hist-item-${realIdx}">
-      <div class="history-num">${realIdx + 1}</div>
-      <div class="history-info">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
-          <h4>${_esc(inv.customerName || 'Walk-in Customer')}</h4>
-          ${_statusBadge(inv)}
+      const phone = inv.phone && inv.phone !== 'Not Provided' ? inv.phone : ''
+      return `<div class="history-item ${inv.status || 'paid'}" id="hist-item-${idx}">
+        <div class="history-num">${idx + 1}</div>
+        <div class="history-info">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+            <h4>${_esc(inv.customerName || 'Walk-in Customer')}</h4>
+            ${_statusBadge(inv)}
+          </div>
+          <div class="history-meta">
+            <span><i class="fas fa-hashtag"></i> ${_esc(inv.invoiceNo || 'N/A')}</span>
+            <span><i class="fas fa-calendar-alt"></i> ${_esc(inv.date || 'N/A')}</span>
+            ${phone ? `<span><i class="fas fa-phone"></i> ${_esc(phone)}</span>` : ''}
+          </div>
         </div>
-        <div class="history-meta">
-          <span><i class="fas fa-hashtag"></i> ${_esc(inv.invoiceNo || 'N/A')}</span>
-          <span><i class="fas fa-calendar-alt"></i> ${_esc(inv.date || 'N/A')}</span>
-          ${phone ? `<span><i class="fas fa-phone"></i> ${_esc(phone)}</span>` : ''}
-          ${s === 'pending' && bal > 0 ? `<span style="color:var(--danger);font-weight:600"><i class="fas fa-exclamation-circle"></i> Balance: Rs.${_fmt(bal)}</span>` : ''}
+        <div class="history-amount">Rs. ${_fmt(inv.total || 0)}</div>
+        <div class="history-actions">
+          <button class="history-btn view" onclick="printInvoice(${idx})" title="Print / Save as PDF">
+            <i class="fas fa-print"></i>
+          </button>
+          <button class="history-btn whatsapp" onclick="shareWhatsApp(${idx})" title="Share via WhatsApp">
+            <i class="fab fa-whatsapp"></i>
+          </button>
+          <button class="history-btn status-toggle" onclick="openPaymentModal(${idx})" title="Manage Payment">
+            <i class="fas fa-credit-card"></i>
+          </button>
+          <button class="history-btn delete" onclick="deleteFromHistory(${idx})" title="Delete">
+            <i class="fas fa-trash"></i>
+          </button>
         </div>
-      </div>
-      <div class="history-amount">Rs. ${_fmt(inv.total || 0)}</div>
-      <div class="history-actions">
-        <button class="history-btn view" id="dl-btn-${realIdx}" onclick="viewInvoice(${realIdx})" title="Download PDF">
-          <i class="fas fa-file-download"></i>
-        </button>
-        <button class="history-btn whatsapp ${hasPhone ? '' : 'no-phone'}" onclick="shareWhatsApp(${realIdx})" title="${hasPhone ? 'Share via WhatsApp' : 'Share via WhatsApp (no phone saved)'}">
-          <i class="fab fa-whatsapp"></i>
-        </button>
-        <button class="history-btn status-toggle" onclick="openPaymentModal(${realIdx})" title="Manage Payment / Status">
-          <i class="fas fa-credit-card"></i>
-        </button>
-        <button class="history-btn delete" onclick="deleteFromHistory(${realIdx})" title="Delete Invoice">
-          <i class="fas fa-trash"></i>
-        </button>
-      </div>
-    </div>`
+      </div>`
     })
     .join('')
 }
 
-// ─── PDF DOWNLOAD ─────────────────────────────────────────────────────────────
-window.viewInvoice = function (index) {
+// ─── Print Invoice ────────────────────────────────────────────────────────────
+window.printInvoice = function (index) {
   try {
     const history = JSON.parse(
       localStorage.getItem('techno_invoice_history') || '[]',
@@ -376,115 +377,136 @@ window.viewInvoice = function (index) {
       return
     }
 
+    // Populate print template
+    document.getElementById('printCustomerName').innerText =
+      inv.customerName || 'Walk-in Customer'
+    document.getElementById('printCustomerPhone').innerText =
+      inv.phone || 'Not Provided'
+    document.getElementById('printInvoiceNo').innerText = inv.invoiceNo || 'N/A'
+    document.getElementById('printDate').innerText =
+      inv.date || new Date().toLocaleDateString()
+    document.getElementById('printItemsBody').innerHTML =
+      inv.itemsHTML ||
+      '<tr><td colspan="4" style="text-align:center;padding:20px">No items found</td></tr>'
+    document.getElementById('printSubTotal').innerText =
+      `Rs. ${_fmt(inv.subtotal || 0)}`
+    document.getElementById('printDiscount').innerText =
+      `-Rs. ${_fmt(inv.discount || 0)}`
+    document.getElementById('printGrandTotal').innerText =
+      `Rs. ${_fmt(inv.total || 0)}`
+
+    // Payment status block
     const s = inv.status || 'paid'
     const paid = _paidAmount(inv)
     const bal = _balanceDue(inv)
+    const statusDiv = document.getElementById('printPaymentStatus')
 
-    document.getElementById('pdfCustomerName').innerText =
-      inv.customerName || 'Walk-in Customer'
-    document.getElementById('pdfCustomerPhone').innerText =
-      inv.phone || 'Not Provided'
-    document.getElementById('pdfInvoiceDisplay').innerText =
-      inv.invoiceNo || 'N/A'
-    document.getElementById('pdfDateDisplay').innerText =
-      inv.date || new Date().toLocaleDateString()
-    document.getElementById('pdfItemsBody').innerHTML =
-      inv.itemsHTML ||
-      '<tr><td colspan="4" style="text-align:center;padding:20px">No items found</td></tr>'
-    document.getElementById('pdfSubTotal').innerText =
-      `Rs. ${_fmt(inv.subtotal || 0)}`
-    document.getElementById('pdfDiscount').innerText =
-      `-Rs. ${_fmt(inv.discount || 0)}`
-    document.getElementById('pdfGrandTotal').innerText =
-      `Rs. ${_fmt(inv.total || 0)}`
-
-    const pdfPs = document.getElementById('pdfPaymentStatus')
-    if (pdfPs) {
-      if (s === 'paid') {
-        pdfPs.innerHTML = `
-          <div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:13px 18px;margin:0 0 14px 0;display:flex;justify-content:space-between;align-items:center;page-break-inside:avoid">
-            <div style="display:flex;align-items:center;gap:10px">
-              <div style="width:36px;height:36px;background:#16a34a;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                <span style="color:#fff;font-size:16px">✓</span>
-              </div>
-              <div>
-                <div style="color:#15803d;font-weight:800;font-size:13px;letter-spacing:0.5px">PAID IN FULL</div>
-                <div style="color:#166534;font-size:11px;margin-top:2px">Payment received — Thank you!</div>
-              </div>
-            </div>
-            <div style="text-align:right">
-              <div style="color:#15803d;font-weight:800;font-size:16px;font-family:monospace">Rs. ${_fmt(paid)}</div>
-              <div style="color:#166534;font-size:10px;margin-top:2px">Amount Paid</div>
-            </div>
-          </div>`
-      } else if (s === 'pending' && bal > 0) {
-        pdfPs.innerHTML = `
-          <div style="background:#fffbeb;border:1.5px solid #fcd34d;border-radius:10px;padding:13px 18px;margin:0 0 14px 0;page-break-inside:avoid">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-              <div style="display:flex;align-items:center;gap:8px">
-                <span style="font-size:20px">⏳</span>
-                <span style="color:#92400e;font-weight:800;font-size:12px;letter-spacing:0.5px;text-transform:uppercase">Partial Payment — Balance Due</span>
-              </div>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:6px">
-              <span style="color:#78350f">Paid So Far: <strong style="font-family:monospace;font-size:13px">Rs. ${_fmt(paid)}</strong></span>
-              <span style="color:#991b1b;font-weight:700">Balance Due: <strong style="font-family:monospace;font-size:13px">Rs. ${_fmt(bal)}</strong></span>
-            </div>
-          </div>`
-      } else if (s === 'cancelled') {
-        pdfPs.innerHTML = `
-          <div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:13px 18px;margin:0 0 14px 0;display:flex;align-items:center;gap:12px;page-break-inside:avoid">
-            <div style="width:36px;height:36px;background:#dc2626;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-              <span style="color:#fff;font-size:16px;font-weight:700">✕</span>
-            </div>
-            <div>
-              <div style="color:#991b1b;font-weight:800;font-size:13px;letter-spacing:0.5px;text-transform:uppercase">Cancelled Invoice</div>
-              <div style="color:#b91c1c;font-size:11px;margin-top:2px">This invoice has been voided and is no longer valid.</div>
-            </div>
-          </div>`
-      } else {
-        pdfPs.innerHTML = ''
-      }
+    if (s === 'paid') {
+      statusDiv.innerHTML = `<div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;padding:13px 18px;margin:0 0 14px;display:flex;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:36px;height:36px;background:#16a34a;border-radius:50%;display:flex;align-items:center;justify-content:center"><span style="color:#fff;font-size:16px">✓</span></div>
+          <div><div style="color:#15803d;font-weight:800">PAID IN FULL</div><div style="color:#166534;font-size:11px">Payment received — Thank you!</div></div>
+        </div>
+        <div style="text-align:right"><div style="color:#15803d;font-weight:800">Rs. ${_fmt(paid)}</div><div style="color:#166534;font-size:10px">Amount Paid</div></div>
+      </div>`
+    } else if (s === 'pending' && bal > 0) {
+      statusDiv.innerHTML = `<div style="background:#fffbeb;border:1.5px solid #fcd34d;border-radius:10px;padding:13px 18px;margin:0 0 14px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:8px"><span style="font-size:20px">⏳</span><span style="color:#92400e;font-weight:800">PARTIAL PAYMENT — BALANCE DUE</span></div>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:#78350f">Paid: <strong>Rs. ${_fmt(paid)}</strong></span>
+          <span style="color:#991b1b;font-weight:700">Balance: <strong>Rs. ${_fmt(bal)}</strong></span>
+        </div>
+      </div>`
+    } else if (s === 'cancelled') {
+      statusDiv.innerHTML = `<div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:10px;padding:13px 18px;margin:0 0 14px;display:flex;align-items:center;gap:12px">
+        <div style="width:36px;height:36px;background:#dc2626;border-radius:50%;display:flex;align-items:center;justify-content:center"><span style="color:#fff;font-size:16px">✕</span></div>
+        <div><div style="color:#991b1b;font-weight:800">CANCELLED</div><div style="color:#b91c1c;font-size:11px">This invoice has been voided.</div></div>
+      </div>`
+    } else {
+      statusDiv.innerHTML = ''
     }
 
+    // Terms
     const terms = JSON.parse(localStorage.getItem('techno_terms') || '[]')
     const selected = terms.filter((t) => t.selected)
-    const pdfTerms = document.getElementById('pdfTermsList')
-    if (pdfTerms) {
-      pdfTerms.innerHTML =
-        selected.length === 0
-          ? '<li style="color:#64748b"><i class="fas fa-info-circle"></i> No terms selected</li>'
-          : selected
-              .map(
-                (t) =>
-                  `<li><i class="fas fa-check-circle" style="color:#10b981"></i> ${_esc(t.text)}</li>`,
-              )
-              .join('')
-    }
+    document.getElementById('printTermsList').innerHTML = !selected.length
+      ? '<li>No terms selected</li>'
+      : selected
+          .map(
+            (t) =>
+              `<li><i class="fas fa-check-circle" style="color:#10b981"></i> ${_esc(t.text)}</li>`,
+          )
+          .join('')
 
-    const btn = document.getElementById(`dl-btn-${index}`)
-    if (btn) {
-      btn.disabled = true
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'
+    // Open print window
+    const printContent = document.getElementById('printTemplate').innerHTML
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) {
+      showToast('Pop-up blocked! Please allow pop-ups and try again.', 'error')
+      return
     }
-
-    setTimeout(() => {
-      if (typeof generatePDFWithSettings === 'function')
-        generatePDFWithSettings(inv.invoiceNo || 'invoice')
-      setTimeout(() => {
-        if (btn) {
-          btn.disabled = false
-          btn.innerHTML = '<i class="fas fa-file-download"></i>'
-        }
-      }, 3800)
-    }, 300)
+    printWindow.document.write(`<!DOCTYPE html><html><head>
+      <title>Invoice ${inv.invoiceNo}</title>
+      <meta charset="UTF-8">
+      <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+      <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Outfit',sans-serif;background:#f8fafc;padding:24px}
+        .invoice-wrap{max-width:210mm;margin:0 auto;background:white;border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.12)}
+        .print-header{background:linear-gradient(135deg,#2563eb,#1d4ed8);padding:24px 28px;color:white}
+        .print-header-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;flex-wrap:wrap;gap:14px}
+        .print-brand{display:flex;align-items:center;gap:16px}
+        .print-brand-icon{width:52px;height:52px;background:white;border-radius:14px;display:flex;align-items:center;justify-content:center;color:#2563eb;font-size:22px;font-weight:800}
+        .print-brand-text h1{font-size:22px;font-weight:800;color:white;margin:0}
+        .print-brand-text p{font-size:10px;opacity:0.8;margin:3px 0 0}
+        .print-badge{background:rgba(255,255,255,0.15);padding:10px 22px;border-radius:40px;border:1px solid rgba(255,255,255,0.2)}
+        .print-badge h2{font-size:20px;font-weight:700;margin:0;color:white}
+        .print-info{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+        .print-bill-to,.print-invoice-details{background:rgba(255,255,255,0.1);padding:14px 16px;border-radius:10px}
+        .print-invoice-details{display:flex;justify-content:space-between;gap:20px}
+        .print-label{font-size:9px;text-transform:uppercase;letter-spacing:0.5px;opacity:0.8;margin-bottom:5px;font-weight:700}
+        .print-value{font-size:14px;font-weight:700}
+        .print-phone{font-size:12px;opacity:0.9;margin-top:4px}
+        .print-body{padding:24px 28px;background:white}
+        .print-table{width:100%;border-collapse:collapse;margin:14px 0}
+        .print-table th{background:#f8fafc;padding:12px;font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.5px;border-bottom:2px solid #e2e8f0;text-align:left}
+        .print-table th:nth-child(2),.print-table th:nth-child(3),.print-table th:nth-child(4){text-align:right}
+        .print-table td{padding:10px 12px;border-bottom:1px solid #e2e8f0;color:#1e293b;font-size:13px}
+        .print-table td:nth-child(2),.print-table td:nth-child(3),.print-table td:nth-child(4){text-align:right}
+        .print-totals{display:flex;justify-content:flex-end;margin:18px 0}
+        .print-totals-box{width:280px;background:#f8fafc;padding:16px 20px;border-radius:12px}
+        .print-total-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed #cbd5e1;font-size:13px}
+        .print-grand-total{display:flex;justify-content:space-between;padding:12px 0 0;margin-top:8px;border-top:2px solid #1e293b;font-size:16px;font-weight:800}
+        .print-grand-total span:last-child{color:#2563eb;font-size:18px}
+        .print-footer{display:grid;grid-template-columns:1.5fr 1fr;gap:20px;margin-top:24px;padding-top:20px;border-top:2px solid #e2e8f0}
+        .print-thankyou h3{font-size:15px;font-weight:700;color:#1e293b;margin:0 0 8px}
+        .print-thankyou p{font-size:11px;color:#64748b;line-height:1.5;margin:0}
+        .print-terms{background:#f8fafc;padding:14px 18px;border-radius:12px}
+        .print-terms h4{font-size:12px;font-weight:700;color:#1e293b;margin:0 0 10px}
+        .print-terms ul{list-style:none;padding:0;margin:0}
+        .print-terms li{font-size:11px;color:#475569;margin-bottom:7px;display:flex;align-items:flex-start;gap:6px;line-height:1.4}
+        .print-btn{display:block;margin:20px auto 0;padding:12px 32px;background:#2563eb;color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif}
+        @media print{body{padding:0;background:white}.print-btn{display:none}.invoice-wrap{box-shadow:none;border-radius:0}.print-header{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+        @page{size:A4;margin:12mm}
+      </style>
+      </head>
+      <body>
+        <div class="invoice-wrap">${printContent}</div>
+        <button class="print-btn" onclick="window.print()"><i class="fas fa-print"></i> Print / Save as PDF</button>
+        <script>setTimeout(()=>window.print(),600)<\/script>
+      </body></html>`)
+    printWindow.document.close()
+    showToast('Opening print preview...', 'success')
   } catch (err) {
-    console.error('viewInvoice:', err)
+    console.error(err)
     showToast('Error loading invoice', 'error')
   }
 }
 
-// ─── WHATSAPP SHARE ───────────────────────────────────────────────────────────
+// ─── WhatsApp ─────────────────────────────────────────────────────────────────
 window.shareWhatsApp = function (index) {
   const history = JSON.parse(
     localStorage.getItem('techno_invoice_history') || '[]',
@@ -495,94 +517,41 @@ window.shareWhatsApp = function (index) {
     return
   }
 
-  const s = inv.status || 'paid'
-  const paid = _paidAmount(inv)
-  const bal = _balanceDue(inv)
-
   let itemsText = ''
   try {
     const tmp = document.createElement('table')
     tmp.innerHTML = inv.itemsHTML || ''
     tmp.querySelectorAll('tr').forEach((row) => {
       const cells = row.querySelectorAll('td')
-      if (cells.length >= 4) {
-        const name = cells[0].textContent.trim()
-        const qty = cells[1].textContent.trim()
-        const tot = cells[3].textContent.trim()
-        if (name) itemsText += `  • ${name} ×${qty} — ${tot}\n`
-      }
+      if (cells.length >= 4)
+        itemsText += `  • ${cells[0].textContent.trim()} ×${cells[1].textContent.trim()} — ${cells[3].textContent.trim()}\n`
     })
   } catch (e) {}
 
-  let statusBlock = ''
-  if (s === 'paid') {
-    statusBlock =
-      `━━━━━━━━━━━━━━━━━\n` +
-      `✅ *PAID IN FULL*\n` +
-      `💳 Amount Paid: *Rs. ${_fmt(paid)}*`
-  } else if (s === 'cancelled') {
-    statusBlock =
-      `━━━━━━━━━━━━━━━━━\n` +
-      `❌ *CANCELLED*\n` +
-      `This invoice has been voided.`
-  } else {
-    statusBlock =
-      `━━━━━━━━━━━━━━━━━\n` +
-      `⏳ *PARTIAL PAYMENT — BALANCE DUE*\n` +
-      `💳 Paid So Far: *Rs. ${_fmt(paid)}*\n` +
-      `⚠️ Balance Due: *Rs. ${_fmt(bal)}*\n` +
-      `\nPlease settle the remaining balance at your earliest convenience.`
-  }
+  const s = inv.status || 'paid'
+  const paid = _paidAmount(inv)
+  const bal = _balanceDue(inv)
+  const statusBlock =
+    s === 'paid'
+      ? `✅ PAID IN FULL - Amount: Rs. ${_fmt(paid)}`
+      : s === 'cancelled'
+        ? `❌ CANCELLED`
+        : `⏳ PARTIAL PAYMENT - Paid: Rs. ${_fmt(paid)} | Balance: Rs. ${_fmt(bal)}`
 
-  const discountLine =
-    inv.discount && inv.discount > 0
-      ? `🏷️ Discount: -Rs. ${_fmt(inv.discount)}\n`
-      : ''
-
-  const msg =
-    `━━━━━━━━━━━━━━━━━━━━━\n` +
-    `📱 *TECHNO MOBILE*\n` +
-    `   Authorized Retail & Repair\n` +
-    `━━━━━━━━━━━━━━━━━━━━━\n\n` +
-    `🧾 *Invoice No:* ${inv.invoiceNo || 'N/A'}\n` +
-    `📅 *Date:* ${inv.date || 'N/A'}\n` +
-    `👤 *Customer:* ${inv.customerName || 'Walk-in Customer'}\n` +
-    (inv.phone && inv.phone !== 'Not Provided'
-      ? `📞 *Phone:* ${inv.phone}\n`
-      : '') +
-    `\n` +
-    `🛒 *Items Purchased:*\n` +
-    (itemsText || `  • (see invoice PDF)\n`) +
-    `\n` +
-    `💰 Subtotal: Rs. ${_fmt(inv.subtotal || 0)}\n` +
-    discountLine +
-    `💵 *Total: Rs. ${_fmt(inv.total || 0)}*\n` +
-    `\n` +
-    statusBlock +
-    `\n\n` +
-    `━━━━━━━━━━━━━━━━━━━━━\n` +
-    `🙏 _Thank you for choosing Techno Mobile!_`
+  const msg = `📱 TECHNO MOBILE\n━━━━━━━━━━━━━━━━━━━━━\n🧾 Invoice: ${inv.invoiceNo}\n📅 Date: ${inv.date}\n👤 Customer: ${inv.customerName || 'Walk-in Customer'}${inv.phone && inv.phone !== 'Not Provided' ? `\n📞 Phone: ${inv.phone}` : ''}\n\n🛒 Items:\n${itemsText}\n💰 Subtotal: Rs. ${_fmt(inv.subtotal || 0)}${inv.discount ? `\n🏷️ Discount: -Rs. ${_fmt(inv.discount)}` : ''}\n💵 TOTAL: Rs. ${_fmt(inv.total || 0)}\n\n${statusBlock}\n\n🙏 Thank you for choosing Techno Mobile!`
 
   const raw = (inv.phone || '').replace(/\D/g, '')
-  let intlPhone = ''
-  if (raw.length >= 9) {
-    intlPhone = raw.startsWith('0') ? '94' + raw.slice(1) : raw
-  }
+  const intlPhone =
+    raw.length >= 9 ? (raw.startsWith('0') ? '94' + raw.slice(1) : raw) : ''
 
-  const url = intlPhone
-    ? `https://wa.me/${intlPhone}?text=${encodeURIComponent(msg)}`
-    : `https://wa.me/?text=${encodeURIComponent(msg)}`
-
-  window.open(url, '_blank')
-  showToast(
-    intlPhone
-      ? '✓ Opening WhatsApp chat...'
-      : '✓ Opening WhatsApp (no phone — pick contact)',
-    'success',
+  window.open(
+    `https://wa.me/${intlPhone || ''}?text=${encodeURIComponent(msg)}`,
+    '_blank',
   )
+  showToast('Opening WhatsApp...', 'success')
 }
 
-// ─── PAYMENT MODAL - IMPROVED UI ─────────────────────────────────────────────
+// ─── Payment Modal ────────────────────────────────────────────────────────────
 window.openPaymentModal = function (index) {
   const history = JSON.parse(
     localStorage.getItem('techno_invoice_history') || '[]',
@@ -594,7 +563,6 @@ window.openPaymentModal = function (index) {
   const paid = _paidAmount(inv)
   const bal = _balanceDue(inv)
 
-  // Update modal info
   document.getElementById('pmInvoiceNo').innerText = inv.invoiceNo || 'N/A'
   document.getElementById('pmCustomerName').innerText =
     inv.customerName || 'Walk-in Customer'
@@ -602,7 +570,6 @@ window.openPaymentModal = function (index) {
   document.getElementById('pmPaid').innerText = `Rs. ${_fmt(paid)}`
   document.getElementById('pmBalance').innerText = `Rs. ${_fmt(bal)}`
 
-  // Clear and set amount input
   const amountInput = document.getElementById('pmAmount')
   if (amountInput) {
     amountInput.value = ''
@@ -610,36 +577,25 @@ window.openPaymentModal = function (index) {
       bal > 0 ? `Enter amount (max Rs. ${_fmt(bal)})` : 'No balance due'
     amountInput.max = bal
     amountInput.min = 0
-    amountInput.step = 1
   }
 
   document.getElementById('pmModalIndex').value = index
 
-  // Update status buttons UI
   document.querySelectorAll('.pm-status-btn').forEach((btn) => {
-    const status = btn.dataset.status
     btn.classList.remove('active')
-    if (status === s) {
-      btn.classList.add('active')
-    }
+    if (btn.dataset.status === s) btn.classList.add('active')
   })
 
-  // Show/hide amount input row
   const amtRow = document.getElementById('pmAmountRow')
-  if (amtRow) {
+  if (amtRow)
     amtRow.style.display = s === 'pending' && bal > 0 ? 'flex' : 'none'
-  }
 
-  // Update hint text
   const hintEl = document.querySelector('.pm-hint')
-  if (hintEl && bal > 0 && s === 'pending') {
-    hintEl.innerHTML = `<i class="fas fa-info-circle" style="color: var(--primary)"></i> 
-      Current balance: Rs. ${_fmt(bal)}. Enter amount to pay now.`
-    hintEl.style.display = 'flex'
-  } else if (hintEl) {
-    hintEl.innerHTML = `<i class="fas fa-check-circle" style="color: var(--secondary)"></i> 
-      No balance remaining.`
-    hintEl.style.display = 'flex'
+  if (hintEl) {
+    hintEl.innerHTML =
+      bal > 0 && s === 'pending'
+        ? `<i class="fas fa-info-circle"></i> Current balance: Rs. ${_fmt(bal)}. Enter amount to pay now.`
+        : `<i class="fas fa-check-circle"></i> No balance remaining.`
   }
 
   document.getElementById('paymentModal').style.display = 'flex'
@@ -647,24 +603,17 @@ window.openPaymentModal = function (index) {
 
 window.closePaymentModal = function () {
   document.getElementById('paymentModal').style.display = 'none'
-  const amountInput = document.getElementById('pmAmount')
-  if (amountInput) {
-    amountInput.value = ''
-  }
+  const pmAmount = document.getElementById('pmAmount')
+  if (pmAmount) pmAmount.value = ''
 }
 
 window.pmSetStatus = function (status) {
-  // Update active button UI
   document.querySelectorAll('.pm-status-btn').forEach((btn) => {
     btn.classList.remove('active')
-    if (btn.dataset.status === status) {
-      btn.classList.add('active')
-    }
+    if (btn.dataset.status === status) btn.classList.add('active')
   })
 
   const amtRow = document.getElementById('pmAmountRow')
-  const amountInput = document.getElementById('pmAmount')
-  const hintEl = document.querySelector('.pm-hint')
   const index = parseInt(document.getElementById('pmModalIndex').value)
   const history = JSON.parse(
     localStorage.getItem('techno_invoice_history') || '[]',
@@ -673,32 +622,25 @@ window.pmSetStatus = function (status) {
 
   if (amtRow && inv) {
     const bal = _balanceDue(inv)
-
     if (status === 'pending' && bal > 0) {
       amtRow.style.display = 'flex'
-      if (amountInput) {
-        amountInput.placeholder = `Enter amount (max Rs. ${_fmt(bal)})`
-        amountInput.max = bal
-        amountInput.value = ''
-      }
-      if (hintEl) {
-        hintEl.innerHTML = `<i class="fas fa-info-circle" style="color: var(--primary)"></i> 
-          Current balance: Rs. ${_fmt(bal)}. Enter amount to pay now.`
-      }
-    } else if (status === 'paid') {
-      amtRow.style.display = 'none'
-      if (hintEl) {
-        hintEl.innerHTML = `<i class="fas fa-check-circle" style="color: var(--secondary)"></i> 
-          Invoice will be marked as paid in full.`
-      }
-    } else if (status === 'cancelled') {
-      amtRow.style.display = 'none'
-      if (hintEl) {
-        hintEl.innerHTML = `<i class="fas fa-times-circle" style="color: var(--danger)"></i> 
-          Invoice will be cancelled. This action cannot be undone.`
-      }
+      document.getElementById('pmAmount').placeholder =
+        `Enter amount (max Rs. ${_fmt(bal)})`
+      document.getElementById('pmAmount').max = bal
+      const hint = document.querySelector('.pm-hint')
+      if (hint)
+        hint.innerHTML = `<i class="fas fa-info-circle"></i> Current balance: Rs. ${_fmt(bal)}. Enter amount to pay now.`
     } else {
       amtRow.style.display = 'none'
+      const hint = document.querySelector('.pm-hint')
+      if (hint) {
+        if (status === 'paid')
+          hint.innerHTML = `<i class="fas fa-check-circle"></i> Invoice will be marked as paid in full.`
+        else if (status === 'cancelled')
+          hint.innerHTML = `<i class="fas fa-times-circle"></i> Invoice will be cancelled.`
+        else
+          hint.innerHTML = `<i class="fas fa-info-circle"></i> No changes to payment.`
+      }
     }
   }
 }
@@ -717,10 +659,8 @@ window.savePayment = function () {
   const activeBtn = document.querySelector('.pm-status-btn.active')
   const newStatus = activeBtn ? activeBtn.dataset.status : 'pending'
   const amtInput = parseFloat(document.getElementById('pmAmount').value) || 0
-
   const currentPaid = inv.paidAmount || 0
   const totalAmount = inv.total || 0
-  const remainingBalance = totalAmount - currentPaid
 
   if (newStatus === 'paid') {
     inv.status = 'paid'
@@ -728,55 +668,43 @@ window.savePayment = function () {
     showToast('✅ Invoice marked as Paid in Full!', 'success')
   } else if (newStatus === 'cancelled') {
     inv.status = 'cancelled'
-    showToast('❌ Invoice cancelled', 'success')
+    showToast('Invoice cancelled', 'success')
   } else if (newStatus === 'pending') {
     if (amtInput <= 0) {
       showToast('Please enter a valid payment amount', 'error')
       return
     }
-
-    if (amtInput > remainingBalance + 0.01) {
+    if (amtInput > totalAmount - currentPaid) {
       showToast(
-        `Amount exceeds remaining balance of Rs. ${_fmt(remainingBalance)}`,
+        `Amount exceeds remaining balance of Rs. ${_fmt(totalAmount - currentPaid)}`,
         'error',
       )
       return
     }
-
-    const newPaidAmount = currentPaid + amtInput
-    inv.paidAmount = parseFloat(newPaidAmount.toFixed(2))
-
+    inv.paidAmount = parseFloat((currentPaid + amtInput).toFixed(2))
     if (inv.paidAmount >= totalAmount - 0.01) {
       inv.status = 'paid'
       inv.paidAmount = totalAmount
-      showToast(
-        `✅ Payment recorded! Invoice is now fully paid. Total paid: Rs. ${_fmt(inv.paidAmount)}`,
-        'success',
-      )
+      showToast(`✅ Payment recorded! Invoice fully paid.`, 'success')
     } else {
       inv.status = 'pending'
-      const newBalance = totalAmount - inv.paidAmount
       showToast(
-        `⏳ Payment of Rs. ${_fmt(amtInput)} recorded. Remaining balance: Rs. ${_fmt(newBalance)}`,
+        `⏳ Payment of Rs. ${_fmt(amtInput)} recorded. Remaining: Rs. ${_fmt(totalAmount - inv.paidAmount)}`,
         'success',
       )
     }
   }
 
   inv.lastPaymentAt = new Date().toISOString()
-  inv.lastPaymentAmount = amtInput
-
   history[index] = inv
   localStorage.setItem('techno_invoice_history', JSON.stringify(history))
-
   closePaymentModal()
   displayHistory()
 }
 
-// ─── DELETE ───────────────────────────────────────────────────────────────────
+// ─── Delete & Export ──────────────────────────────────────────────────────────
 window.deleteFromHistory = function (index) {
-  if (!confirm('Delete this invoice? This cannot be undone.')) return
-  try {
+  if (confirm('Delete this invoice? This cannot be undone.')) {
     const history = JSON.parse(
       localStorage.getItem('techno_invoice_history') || '[]',
     )
@@ -784,13 +712,9 @@ window.deleteFromHistory = function (index) {
     localStorage.setItem('techno_invoice_history', JSON.stringify(history))
     displayHistory()
     showToast('Invoice deleted')
-  } catch (err) {
-    console.error(err)
-    showToast('Error deleting invoice', 'error')
   }
 }
 
-// ─── CSV EXPORT ───────────────────────────────────────────────────────────────
 window.exportHistoryCSV = function () {
   const all = JSON.parse(localStorage.getItem('techno_invoice_history') || '[]')
   if (!all.length) {
@@ -826,12 +750,10 @@ window.exportHistoryCSV = function () {
   const csv = [hdr, ...rows]
     .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))
     .join('\n')
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
+
   const a = document.createElement('a')
-  a.href = url
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
   a.download = `TM_History_${new Date().toISOString().slice(0, 10)}.csv`
   a.click()
-  URL.revokeObjectURL(url)
   showToast('Exported as CSV!', 'success')
 }

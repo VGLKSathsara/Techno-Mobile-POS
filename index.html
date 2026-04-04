@@ -6,9 +6,10 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, user-scalable=yes"
     />
-    <title>Techno Mobile | Premium POS System</title>
+    <title>Techno Mobile | POS System</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
     <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&family=Space+Mono:wght@400;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap"
       rel="stylesheet"
     />
     <link
@@ -20,22 +21,30 @@
   <body>
     <!-- LOGIN PAGE -->
     <div id="loginPage" class="login-container">
-      <div class="login-bg-shapes">
-        <div class="shape s1"></div>
-        <div class="shape s2"></div>
-        <div class="shape s3"></div>
+      <div class="login-bg-anim">
+        <div class="login-orb orb1"></div>
+        <div class="login-orb orb2"></div>
+        <div class="login-orb orb3"></div>
+        <div class="login-grid-lines"></div>
       </div>
       <div class="login-card">
-        <div class="login-icon">TM</div>
+        <div class="login-brand">
+          <div class="login-icon">TM</div>
+          <div class="login-brand-text">
+            <h1>Techno Mobile</h1>
+            <p>POS Pro System</p>
+          </div>
+        </div>
+        <div class="login-divider"></div>
         <h2>Welcome Back</h2>
-        <p class="login-subtitle">Sign in to Techno Mobile POS</p>
+        <p class="login-subtitle">Sign in to access your dashboard</p>
         <div class="login-input-group">
           <label><i class="fas fa-user"></i> Username</label>
           <input
             type="text"
             id="username"
             placeholder="Enter username"
-            autocomplete="off"
+            autocomplete="username"
             onkeydown="if (event.key === 'Enter') login()"
           />
         </div>
@@ -46,16 +55,22 @@
               type="password"
               id="password"
               placeholder="Enter password"
-              autocomplete="off"
+              autocomplete="current-password"
               onkeydown="if (event.key === 'Enter') login()"
             />
-            <button class="pw-toggle" onclick="togglePassword()" tabindex="-1">
+            <button
+              class="pw-toggle"
+              onclick="togglePassword()"
+              type="button"
+              tabindex="-1"
+            >
               <i class="fas fa-eye" id="pwEyeIcon"></i>
             </button>
           </div>
         </div>
         <div id="loginError" class="login-error" style="display: none">
-          <i class="fas fa-exclamation-circle"></i> Invalid username or password
+          <i class="fas fa-exclamation-triangle"></i> Invalid username or
+          password
         </div>
         <button class="login-btn" onclick="login()">
           <i class="fas fa-sign-in-alt"></i> Login to Dashboard
@@ -78,60 +93,96 @@
           </div>
         </div>
         <nav class="sidebar-nav">
-          <div
-            class="nav-item active"
-            onclick="switchTab('pos')"
-            id="navPos"
-            title="Point of Sale (Ctrl+1)"
-          >
-            <i class="fas fa-cash-register"></i><span>Point of Sale</span>
+          <div class="nav-label">MAIN MENU</div>
+          <div class="nav-item active" onclick="switchTab('pos')" id="navPos">
+            <div class="nav-icon"><i class="fas fa-cash-register"></i></div>
+            <span>Point of Sale</span>
+            <div class="nav-indicator"></div>
           </div>
-          <div
-            class="nav-item"
-            onclick="switchTab('history')"
-            id="navHistory"
-            title="Invoice History (Ctrl+2)"
-          >
-            <i class="fas fa-receipt"></i><span>Invoice History</span>
+          <div class="nav-item" onclick="switchTab('history')" id="navHistory">
+            <div class="nav-icon"><i class="fas fa-receipt"></i></div>
+            <span>Invoice History</span>
+            <div class="nav-indicator"></div>
           </div>
           <div
             class="nav-item"
             onclick="switchTab('inventory')"
             id="navInventory"
-            title="Inventory (Ctrl+3)"
           >
-            <i class="fas fa-boxes"></i><span>Inventory</span>
+            <div class="nav-icon"><i class="fas fa-boxes"></i></div>
+            <span>Inventory</span>
+            <div class="nav-indicator"></div>
           </div>
         </nav>
-        <div class="sidebar-shortcuts">
-          <div class="shortcut-hint">
-            <kbd>Ctrl</kbd>+<kbd>S</kbd> Save Invoice
-          </div>
-          <div class="shortcut-hint">
-            <kbd>Ctrl</kbd>+<kbd>1/2/3</kbd> Switch Tab
-          </div>
-        </div>
+        <div class="sidebar-spacer"></div>
         <div class="sidebar-footer">
           <div class="user-badge">
-            <i class="fas fa-user-circle"></i><span id="loggedUser"></span>
+            <div class="user-avatar"><i class="fas fa-user"></i></div>
+            <span id="loggedUser" class="user-name"></span>
           </div>
-          <button
-            class="icon-btn"
-            onclick="toggleDarkMode()"
-            title="Toggle Dark Mode"
-          >
-            <i class="fas fa-moon" id="darkModeIcon"></i>
+          <div class="sidebar-footer-btns">
+            <button
+              class="icon-btn"
+              onclick="toggleDarkMode()"
+              title="Toggle Dark Mode"
+            >
+              <i class="fas fa-moon" id="darkModeIcon"></i>
+            </button>
+            <button
+              class="icon-btn"
+              onclick="openSettingsModal()"
+              title="Backup & Restore"
+            >
+              <i class="fas fa-database"></i>
+            </button>
+            <button class="logout-btn" onclick="logout()" title="Logout">
+              <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobile Top Bar -->
+      <div class="mobile-topbar">
+        <div class="brand-icon small">TM</div>
+        <span class="mobile-tab-title" id="mobileTabTitle">Point of Sale</span>
+        <div class="mobile-topbar-actions">
+          <button class="icon-btn" onclick="toggleDarkMode()">
+            <i class="fas fa-moon" id="darkModeIconMobile"></i>
           </button>
-          <button
-            class="icon-btn"
-            onclick="openSettingsModal()"
-            title="Backup & Restore"
-          >
-            <i class="fas fa-database"></i>
+          <button class="icon-btn" onclick="toggleMobileSidebar()">
+            <i class="fas fa-bars"></i>
           </button>
-          <button class="logout-btn" onclick="logout()" title="Logout">
-            <i class="fas fa-sign-out-alt"></i>
-          </button>
+        </div>
+      </div>
+      <div
+        class="mobile-sidebar-overlay"
+        id="mobileSidebarOverlay"
+        onclick="toggleMobileSidebar()"
+      ></div>
+
+      <!-- Mobile Bottom Nav -->
+      <div class="mobile-bottom-nav">
+        <div
+          class="mobile-nav-item active"
+          onclick="switchTab('pos')"
+          id="mobileNavPos"
+        >
+          <i class="fas fa-cash-register"></i><span>POS</span>
+        </div>
+        <div
+          class="mobile-nav-item"
+          onclick="switchTab('history')"
+          id="mobileNavHistory"
+        >
+          <i class="fas fa-receipt"></i><span>History</span>
+        </div>
+        <div
+          class="mobile-nav-item"
+          onclick="switchTab('inventory')"
+          id="mobileNavInventory"
+        >
+          <i class="fas fa-boxes"></i><span>Inventory</span>
         </div>
       </div>
 
@@ -140,18 +191,23 @@
         <!-- POS TAB -->
         <div id="posTab" class="tab-panel">
           <div class="page-header">
-            <div>
+            <div class="page-header-left">
               <h1>New Invoice</h1>
               <p>Create a new sales invoice</p>
             </div>
             <div class="invoice-badge">
-              <span class="inv-label">INVOICE</span>
-              <span class="inv-no mono" id="inNo">—</span>
-              <span class="inv-date" id="liveDate"></span>
+              <div class="inv-badge-inner">
+                <span class="inv-label">INVOICE NO.</span>
+                <span class="inv-no mono" id="inNo">—</span>
+              </div>
+              <div class="inv-badge-inner">
+                <span class="inv-label">DATE</span>
+                <span class="inv-date" id="liveDate"></span>
+              </div>
             </div>
           </div>
 
-          <!-- Customer Details Card -->
+          <!-- Customer Details -->
           <div class="card">
             <div class="card-title">
               <i class="fas fa-user-tag"></i> Customer Details
@@ -169,7 +225,7 @@
               <div class="pos-input-group">
                 <span class="pos-label">CONTACT NO.</span>
                 <input
-                  type="text"
+                  type="tel"
                   id="inPhone"
                   placeholder="07x xxxxxxx"
                   class="pos-input"
@@ -184,7 +240,7 @@
             </div>
           </div>
 
-          <!-- Accessories Card -->
+          <!-- Accessories -->
           <div class="card">
             <div class="card-title-row">
               <div class="card-title">
@@ -194,34 +250,48 @@
                 <i class="fas fa-plus"></i> Add Item
               </button>
             </div>
-            <div class="pos-acc-grid" id="accGrid"></div>
+            <div class="pos-acc-grid" id="accGrid">
+              <div class="acc-empty-hint" id="accEmptyHint">
+                <i class="fas fa-boxes"></i>
+                <p>
+                  No accessories loaded. Add items from Inventory or click "Add
+                  Item".
+                </p>
+              </div>
+            </div>
           </div>
 
-          <!-- Devices Card -->
+          <!-- Devices & Custom Items -->
           <div class="card">
             <div class="card-title-row">
               <div class="card-title">
                 <i class="fas fa-mobile-alt"></i> Devices &amp; Custom Items
               </div>
+              <button class="btn-ghost" onclick="addDevice()">
+                <i class="fas fa-plus"></i> Add Device
+              </button>
             </div>
-
-            <div class="device-header">
-              <div class="device-header-item">Model / Item Name</div>
-              <div class="device-header-item">Storage / Variant</div>
-              <div class="device-header-item">IMEI / Serial No.</div>
-              <div class="device-header-item">Qty</div>
-              <div class="device-header-item">Price (Rs.)</div>
-              <div class="device-header-item"></div>
+            <div class="device-table-wrap">
+              <div class="device-header">
+                <div class="device-header-item">Model / Item Name</div>
+                <div class="device-header-item">Storage / Variant</div>
+                <div class="device-header-item">IMEI / Serial No.</div>
+                <div class="device-header-item center">Qty</div>
+                <div class="device-header-item right">Price (Rs.)</div>
+                <div class="device-header-item"></div>
+              </div>
+              <div id="deviceArea"></div>
             </div>
-
-            <div id="deviceArea"></div>
-
-            <button class="btn-dashed" onclick="addDevice()">
-              <i class="fas fa-plus"></i> Add Device / Custom Item
-            </button>
+            <div class="device-empty-state" id="deviceEmptyState">
+              <i class="fas fa-mobile-alt"></i>
+              <p>
+                No devices added. Click "Add Device" to include a device or
+                custom item.
+              </p>
+            </div>
           </div>
 
-          <!-- Terms Card -->
+          <!-- Terms & Conditions -->
           <div class="card">
             <div class="card-title-row">
               <div class="card-title">
@@ -234,78 +304,99 @@
             <div id="termsContainer" class="terms-container"></div>
           </div>
 
-          <!-- Billing Summary with Payment Field -->
+          <!-- Billing Summary -->
           <div class="billing-summary">
+            <div class="summary-header">
+              <i class="fas fa-calculator"></i> Billing Summary
+            </div>
             <div class="summary-lines">
               <div class="summary-row">
-                <span>Subtotal</span>
+                <span class="summary-label">Subtotal</span>
                 <span id="liveSubtotal" class="summary-value">Rs. 0.00</span>
               </div>
-              <div class="summary-row">
+              <div class="summary-row discount-row">
                 <div class="discount-input-wrap">
-                  <span>Discount</span>
-                  <input
-                    type="number"
-                    id="inDiscount"
-                    value="0"
-                    min="0"
-                    step="1"
-                    class="discount-input"
-                  />
-                  <button class="btn-apply" onclick="applyDiscount()">
-                    Apply
-                  </button>
+                  <span class="summary-label">Discount (Rs.)</span>
+                  <div class="discount-field">
+                    <input
+                      type="number"
+                      id="inDiscount"
+                      value="0"
+                      min="0"
+                      step="1"
+                      class="discount-input"
+                      placeholder="0"
+                    />
+                    <button class="btn-apply" onclick="applyDiscount()">
+                      Apply
+                    </button>
+                  </div>
                 </div>
                 <span id="liveDiscount" class="discount-amt">- Rs. 0.00</span>
               </div>
-              <!-- Payment Field -->
-              <div class="summary-row payment-row">
+              <div class="summary-divider"></div>
+              <div class="summary-row total-highlight">
+                <span class="summary-label-lg">TOTAL PAYABLE</span>
+                <span id="liveTotal" class="total-amount">Rs. 0.00</span>
+              </div>
+              <div class="summary-row">
                 <div class="payment-input-wrap">
-                  <span>Payment Received</span>
-                  <input
-                    type="number"
-                    id="inPayment"
-                    value="0"
-                    min="0"
-                    step="1"
-                    class="payment-input"
-                    oninput="updatePayment()"
-                  />
-                  <button class="btn-payment" onclick="setFullPayment()">
-                    Pay Full
-                  </button>
+                  <span class="summary-label">Payment Received</span>
+                  <div class="payment-field">
+                    <input
+                      type="number"
+                      id="inPayment"
+                      value="0"
+                      min="0"
+                      step="1"
+                      class="payment-input"
+                      placeholder="0"
+                      oninput="updatePayment()"
+                    />
+                    <button class="btn-payment" onclick="setFullPayment()">
+                      Pay Full
+                    </button>
+                  </div>
                 </div>
                 <span id="livePayment" class="payment-amt">Rs. 0.00</span>
               </div>
-              <!-- Balance Due -->
               <div class="summary-row balance-row">
-                <span>Balance Due</span>
-                <span
-                  id="liveBalance"
-                  class="balance-amt"
-                  style="color: var(--warning); font-weight: 700"
-                  >Rs. 0.00</span
-                >
+                <span class="summary-label">Balance Due</span>
+                <span id="liveBalance" class="balance-amt">Rs. 0.00</span>
               </div>
             </div>
-            <div class="summary-total-row">
-              <span>TOTAL PAYABLE</span>
-              <span id="liveTotal" class="total-amount">Rs. 0.00</span>
-            </div>
             <div class="payment-status-select">
-              <label>Payment Status:</label>
-              <select
-                id="invoiceStatus"
-                class="status-select"
-                onchange="updatePaymentStatus()"
+              <label class="status-label"
+                ><i class="fas fa-tag"></i> Payment Status</label
               >
-                <option value="pending">Pending / Partial Payment</option>
-                <option value="paid">Paid in Full</option>
-              </select>
+              <div class="status-btns" id="statusBtns">
+                <button
+                  class="status-opt-btn active"
+                  data-value="pending"
+                  onclick="selectStatus('pending')"
+                >
+                  <i class="fas fa-clock"></i> Pending
+                </button>
+                <button
+                  class="status-opt-btn"
+                  data-value="paid"
+                  onclick="selectStatus('paid')"
+                >
+                  <i class="fas fa-check-circle"></i> Paid
+                </button>
+                <button
+                  class="status-opt-btn"
+                  data-value="cancelled"
+                  onclick="selectStatus('cancelled')"
+                >
+                  <i class="fas fa-times-circle"></i> Cancelled
+                </button>
+              </div>
+              <input type="hidden" id="invoiceStatus" value="pending" />
             </div>
-            <button class="pos-btn-download" onclick="saveInvoice()">
+            <button class="pos-btn-save" onclick="saveInvoice()">
               <i class="fas fa-save"></i> Save Invoice
-              <span class="btn-shortcut">Ctrl+S</span>
+              <span class="save-shortcut">Ctrl+S</span>
             </button>
           </div>
         </div>
@@ -313,33 +404,25 @@
         <!-- HISTORY TAB -->
         <div id="historyTab" class="tab-panel" style="display: none">
           <div class="page-header">
-            <div>
+            <div class="page-header-left">
               <h1>Invoice History</h1>
-              <p>
-                Revenue analytics, payment tracking &amp; invoice management
-              </p>
+              <p>Revenue analytics &amp; invoice management</p>
             </div>
-            <div
-              style="
-                display: flex;
-                gap: 10px;
-                align-items: center;
-                flex-wrap: wrap;
-              "
-            >
-              <input
-                type="text"
-                id="historySearch"
-                class="pos-input"
-                placeholder="Search name, phone, invoice #..."
-                oninput="searchHistory()"
-                style="width: 240px"
-              />
+            <div class="page-header-actions">
+              <div class="search-wrap">
+                <i class="fas fa-search search-icon"></i>
+                <input
+                  type="text"
+                  id="historySearch"
+                  class="search-input"
+                  placeholder="Search name, phone, invoice #..."
+                  oninput="displayHistory()"
+                />
+              </div>
               <select
                 id="statusFilter"
-                class="pos-input"
+                class="filter-select"
                 onchange="displayHistory()"
-                style="width: 130px"
               >
                 <option value="all">All Status</option>
                 <option value="paid">Paid</option>
@@ -347,17 +430,14 @@
                 <option value="cancelled">Cancelled</option>
               </select>
               <button class="btn-export" onclick="exportHistoryCSV()">
-                <i class="fas fa-file-csv"></i> Export CSV
+                <i class="fas fa-file-csv"></i> CSV
               </button>
               <button class="btn-danger-outline" onclick="clearHistory()">
-                <i class="fas fa-trash"></i> Clear All
+                <i class="fas fa-trash"></i> Clear
               </button>
             </div>
           </div>
-
           <div id="historyStats" class="history-stats"></div>
-
-          <!-- Revenue Chart -->
           <div
             id="revenueChartContainer"
             class="card chart-card"
@@ -391,20 +471,17 @@
                 </button>
               </div>
             </div>
-            <div class="chart-wrap">
-              <canvas id="revenueChart"></canvas>
-            </div>
+            <div class="chart-wrap"><canvas id="revenueChart"></canvas></div>
           </div>
-
           <div class="history-list" id="historyList"></div>
         </div>
 
         <!-- INVENTORY TAB -->
         <div id="inventoryTab" class="tab-panel" style="display: none">
           <div class="page-header">
-            <div>
+            <div class="page-header-left">
               <h1>Inventory</h1>
-              <p>Manage your product catalog — changes sync to POS instantly</p>
+              <p>Manage your product catalog</p>
             </div>
             <button class="btn-primary" onclick="addInventoryItem()">
               <i class="fas fa-plus"></i> Add Product
@@ -414,19 +491,15 @@
             <table class="inv-table">
               <thead>
                 <tr>
-                  <th style="width: 50px">#</th>
+                  <th>#</th>
                   <th style="text-align: left">Product Name</th>
-                  <th style="text-align: right; width: 150px">Price (Rs.)</th>
-                  <th style="text-align: center; width: 80px">Actions</th>
+                  <th style="text-align: right">Price (Rs.)</th>
+                  <th style="text-align: center">Actions</th>
                 </tr>
               </thead>
               <tbody id="inventoryTableBody"></tbody>
             </table>
           </div>
-          <p class="inv-hint">
-            <i class="fas fa-info-circle"></i> Click any name or price to edit
-            inline. Changes sync to the POS accessories grid automatically.
-          </p>
         </div>
       </div>
     </div>
@@ -442,7 +515,8 @@
         <h3>Invoice Saved!</h3>
         <p id="saveSuccessInvNo" class="save-success-inv"></p>
         <p class="save-success-sub">
-          Go to <strong>Invoice History</strong> to download the PDF anytime.
+          Your invoice has been saved. Download the PDF anytime from Invoice
+          History.
         </p>
         <div class="save-success-actions">
           <button
@@ -487,7 +561,7 @@
             >
               <span class="pm-inv-no" id="pmInvoiceNo"></span>
               <span
-                style="font-size: 13px; color: var(--gray)"
+                style="font-size: 13px; color: var(--text-muted)"
                 id="pmCustomerName"
               ></span>
             </div>
@@ -496,16 +570,13 @@
                 <span>Invoice Total</span><strong id="pmTotal">—</strong>
               </div>
               <div class="pm-amount-row">
-                <span>Paid So Far</span
-                ><strong id="pmPaid" style="color: #059669">—</strong>
+                <span>Paid So Far</span><strong id="pmPaid">—</strong>
               </div>
               <div class="pm-amount-row">
-                <span>Balance Due</span
-                ><strong id="pmBalance" style="color: #ef4444">—</strong>
+                <span>Balance Due</span><strong id="pmBalance">—</strong>
               </div>
             </div>
           </div>
-
           <div class="pm-status-group">
             <p class="pm-section-label">Set Payment Status</p>
             <div class="pm-status-btns">
@@ -532,7 +603,6 @@
               </button>
             </div>
           </div>
-
           <div
             class="pm-amount-input-row"
             id="pmAmountRow"
@@ -548,8 +618,8 @@
               step="1"
             />
             <p class="pm-hint">
-              <i class="fas fa-info-circle" style="color: var(--primary)"></i>
-              Enter the amount to add to the current payment.
+              <i class="fas fa-info-circle"></i> Enter the amount to add to the
+              current payment.
             </p>
           </div>
           <input type="hidden" id="pmModalIndex" />
@@ -565,7 +635,7 @@
       </div>
     </div>
 
-    <!-- SETTINGS / BACKUP MODAL -->
+    <!-- SETTINGS MODAL -->
     <div
       id="settingsModal"
       class="modal-overlay"
@@ -586,10 +656,7 @@
             </div>
             <div>
               <h4>Export Backup</h4>
-              <p>
-                Download all your invoices, inventory, and terms as a JSON file.
-                Store it safely.
-              </p>
+              <p>Download all your data as a JSON file.</p>
               <button
                 class="btn-primary"
                 onclick="
@@ -609,7 +676,7 @@
             <div>
               <h4>Restore from Backup</h4>
               <p>
-                Upload a previously exported <code>.json</code> backup file.
+                Upload a backup file.
                 <strong>This will replace all current data.</strong>
               </p>
               <button
@@ -627,99 +694,80 @@
       </div>
     </div>
 
-    <!-- HIDDEN PDF INVOICE TEMPLATE -->
-    <div id="invoice-premium">
-      <div class="invoice-pdf">
-        <div class="invoice-card">
-          <div class="pdf-header">
-            <div class="pdf-header-top">
-              <div class="pdf-brand">
-                <div class="pdf-brand-icon">TM</div>
-                <div class="pdf-brand-text">
-                  <h1>Techno Mobile</h1>
-                  <p>AUTHORIZED RETAIL &amp; REPAIR</p>
-                </div>
+    <!-- HIDDEN PRINT TEMPLATE -->
+    <div id="printTemplate" style="display: none">
+      <div class="print-invoice">
+        <div class="print-header">
+          <div class="print-header-top">
+            <div class="print-brand">
+              <div class="print-brand-icon">TM</div>
+              <div class="print-brand-text">
+                <h1>Techno Mobile</h1>
+                <p>AUTHORIZED RETAIL &amp; REPAIR</p>
               </div>
-              <div class="pdf-badge"><h2>INVOICE</h2></div>
             </div>
-            <div class="pdf-info-grid">
-              <div class="pdf-info-block">
-                <div class="pdf-info-label">BILL TO</div>
-                <div class="pdf-info-value" id="pdfCustomerName">
-                  Walk-in Customer
-                </div>
-                <div class="pdf-info-sub" id="pdfCustomerPhone">
-                  Not Provided
-                </div>
+            <div class="print-badge"><h2>INVOICE</h2></div>
+          </div>
+          <div class="print-info">
+            <div class="print-bill-to">
+              <div class="print-label">BILL TO</div>
+              <div class="print-value" id="printCustomerName">
+                Walk-in Customer
               </div>
-              <div class="pdf-info-block">
-                <div
-                  style="
-                    display: flex;
-                    justify-content: space-between;
-                    gap: 20px;
-                  "
-                >
-                  <div>
-                    <div class="pdf-info-label">INVOICE #</div>
-                    <div class="pdf-info-value" id="pdfInvoiceDisplay">
-                      INV-001
-                    </div>
-                  </div>
-                  <div>
-                    <div class="pdf-info-label">DATE</div>
-                    <div class="pdf-info-value" id="pdfDateDisplay"></div>
-                  </div>
-                </div>
+              <div class="print-phone" id="printCustomerPhone">
+                Not Provided
+              </div>
+            </div>
+            <div class="print-invoice-details">
+              <div>
+                <div class="print-label">INVOICE #</div>
+                <div class="print-value" id="printInvoiceNo">INV-001</div>
+              </div>
+              <div>
+                <div class="print-label">DATE</div>
+                <div class="print-value" id="printDate"></div>
               </div>
             </div>
           </div>
-          <div class="pdf-content">
-            <div id="pdfPaymentStatus"></div>
-            <div class="pdf-table-container">
-              <table class="pdf-table">
-                <thead>
-                  <tr>
-                    <th style="width: 45%; text-align: left">
-                      ITEM DESCRIPTION
-                    </th>
-                    <th style="width: 10%; text-align: center">QTY</th>
-                    <th style="width: 20%; text-align: right">PRICE (RS.)</th>
-                    <th style="width: 25%; text-align: right">TOTAL (RS.)</th>
-                  </tr>
-                </thead>
-                <tbody id="pdfItemsBody"></tbody>
-              </table>
-            </div>
-            <div class="pdf-totals">
-              <div class="pdf-totals-box">
-                <div class="pdf-total-row">
-                  <span>Sub Total</span><span id="pdfSubTotal">Rs. 0.00</span>
-                </div>
-                <div class="pdf-total-row">
-                  <span>Discount</span
-                  ><span id="pdfDiscount" style="color: #ef4444"
-                    >-Rs. 0.00</span
-                  >
-                </div>
-                <div class="pdf-total-row pdf-grand-total">
-                  <span>Grand Total</span
-                  ><span id="pdfGrandTotal">Rs. 0.00</span>
-                </div>
+        </div>
+        <div class="print-body">
+          <div id="printPaymentStatus"></div>
+          <table class="print-table">
+            <thead>
+              <tr>
+                <th style="width: 45%">ITEM DESCRIPTION</th>
+                <th style="width: 10%; text-align: center">QTY</th>
+                <th style="width: 20%; text-align: right">PRICE (Rs.)</th>
+                <th style="width: 25%; text-align: right">TOTAL (Rs.)</th>
+              </tr>
+            </thead>
+            <tbody id="printItemsBody"></tbody>
+          </table>
+          <div class="print-totals">
+            <div class="print-totals-box">
+              <div class="print-total-row">
+                <span>Sub Total</span><span id="printSubTotal">Rs. 0.00</span>
+              </div>
+              <div class="print-total-row">
+                <span>Discount</span><span id="printDiscount">- Rs. 0.00</span>
+              </div>
+              <div class="print-grand-total">
+                <span>Grand Total</span
+                ><span id="printGrandTotal">Rs. 0.00</span>
               </div>
             </div>
-            <div class="pdf-footer">
-              <div class="pdf-thankyou">
-                <h3>Thank you for your business!</h3>
-                <p>
-                  We appreciate your trust in Techno Mobile.<br />For any
-                  inquiries, please contact our support team.
-                </p>
-              </div>
-              <div class="pdf-terms">
-                <h4>Terms &amp; Conditions</h4>
-                <ul id="pdfTermsList"></ul>
-              </div>
+          </div>
+          <div class="print-footer">
+            <div class="print-thankyou">
+              <h3>Thank you for your business!</h3>
+              <p>
+                We appreciate your trust in Techno Mobile.<br />For any
+                inquiries, please contact our support team.
+              </p>
+            </div>
+            <div class="print-terms">
+              <h4>Terms &amp; Conditions</h4>
+              <ul id="printTermsList"></ul>
             </div>
           </div>
         </div>
@@ -728,7 +776,6 @@
 
     <div id="toast" class="toast"></div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="script.js"></script>
     <script src="history.js"></script>
