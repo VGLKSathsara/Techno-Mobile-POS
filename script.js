@@ -163,10 +163,14 @@ function initializePOS() {
   renderInventoryTab()
 }
 
+// FIX #3: Invoice Number - No collisions (using timestamp + random)
 function generateInvoiceNumber() {
   const now = new Date()
-  const rand = Math.floor(Math.random() * 900 + 100)
-  return `INV-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${rand}`
+  const timestamp = now.getTime().toString().slice(-6)
+  const random = Math.floor(Math.random() * 1000)
+    .toString()
+    .padStart(3, '0')
+  return `INV-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${timestamp}${random}`
 }
 
 // ─── Status Button Sync ───────────────────────────────────────────────────────
@@ -176,13 +180,28 @@ function _syncStatusButtons(value) {
   })
 }
 
+// FIX #2: Payment Status Sync - Fixed selectStatus function
 window.selectStatus = function (value) {
   document.getElementById('invoiceStatus').value = value
   _syncStatusButtons(value)
-  // BUG FIX: Auto-fill payment on "paid"
+
+  // Auto-update payment field based on status
   if (value === 'paid') {
-    document.getElementById('inPayment').value = _currentTotal
+    // Get current total from display (remove formatting)
+    const totalText = document.getElementById('liveTotal').innerText
+    const total =
+      parseFloat(totalText.replace('Rs. ', '').replace(/,/g, '')) || 0
+    document.getElementById('inPayment').value = total
     recalc()
+    showToast('Invoice marked as Paid', 'success')
+  } else if (value === 'cancelled') {
+    document.getElementById('inPayment').value = 0
+    recalc()
+    showToast('Invoice marked as Cancelled', 'success')
+  } else if (value === 'pending') {
+    // Keep existing payment amount, just update status
+    recalc()
+    showToast('Invoice status set to Pending', 'success')
   }
 }
 
@@ -497,7 +516,7 @@ function renderInventoryTab() {
   if (!tbody) return
   const inventory = loadInventory()
   if (!inventory.length) {
-    tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><i class="fas fa-boxes"></i><p>No products in inventory. Click "Add Product" to get started.</p></div></td></tr>`
+    tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><i class="fas fa-boxes"></i><p>No products in inventory. Click "Add Product" to get started.</p></div></td></table>`
     return
   }
   tbody.innerHTML = inventory

@@ -84,15 +84,16 @@ function _renderStats(allHistory, filtered) {
 // ─── Chart ────────────────────────────────────────────────────────────────────
 function _renderChart(allHistory) {
   const container = document.getElementById('revenueChartContainer')
-  if (!container) return
+  const canvas = document.getElementById('revenueChart')
+
+  // FIX #1: Check if both container and canvas exist before proceeding
+  if (!container || !canvas) return
+
   if (!allHistory.length) {
     container.style.display = 'none'
     return
   }
   container.style.display = 'block'
-
-  const canvas = document.getElementById('revenueChart')
-  if (!canvas) return
 
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
   const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
